@@ -8,7 +8,7 @@ import logging
 import requests
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional
+from typing import List, Optional, Any, Dict
 import uuid
 from datetime import datetime, timezone
 
@@ -84,20 +84,27 @@ def get_object(path: str) -> tuple:
 
 
 # Models
+class Block(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    type: str  # text, image, grid, carousel, video, embed, separator, spacer
+    order: int
+    content: Dict[str, Any] = {}  # Flexible content based on block type
+    settings: Dict[str, Any] = {}  # Width, padding, etc.
+
+
 class Project(BaseModel):
     model_config = ConfigDict(extra="ignore")
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
     description: str = ""
-    images: List[str] = []  # Storage paths
-    videos: List[str] = []  # Storage paths
-    cover_image: Optional[str] = None  # Storage path
+    cover_image: Optional[str] = None
     category: str = ""
     tags: List[str] = []
     tools: List[str] = []
-    visibility: str = "public"  # public, private, password
+    visibility: str = "public"
     published: bool = False
+    blocks: List[Dict[str, Any]] = []  # List of content blocks
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -121,6 +128,7 @@ class ProjectUpdate(BaseModel):
     tools: Optional[List[str]] = None
     visibility: Optional[str] = None
     published: Optional[bool] = None
+    blocks: Optional[List[Dict[str, Any]]] = None
 
 
 class FileUploadResponse(BaseModel):
@@ -142,7 +150,6 @@ async def root():
 async def upload_file(file: UploadFile = File(...)):
     """Upload image or video file"""
     try:
-        # Validate file type
         content_type = file.content_type or "application/octet-stream"
         allowed_types = [
             "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif",
@@ -152,16 +159,13 @@ async def upload_file(file: UploadFile = File(...)):
         if content_type not in allowed_types:
             raise HTTPException(status_code=400, detail="Invalid file type")
         
-        # Generate storage path
         ext = file.filename.split(".")[-1] if "." in file.filename else "bin"
         file_id = str(uuid.uuid4())
         path = f"{APP_NAME}/uploads/{file_id}.{ext}"
         
-        # Upload to storage
         data = await file.read()
         result = put_object(path, data, content_type)
         
-        # Store reference in MongoDB
         file_doc = {
             "id": file_id,
             "storage_path": result["path"],
@@ -181,6 +185,8 @@ async def upload_file(file: UploadFile = File(...)):
             size=result["size"],
             download_url=f"/api/files/{result['path']}"
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Upload failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -190,12 +196,10 @@ async def upload_file(file: UploadFile = File(...)):
 async def download_file(path: str):
     """Download file from storage"""
     try:
-        # Get file record from DB
         record = await db.files.find_one({"storage_path": path, "is_deleted": False}, {"_id": 0})
         if not record:
             raise HTTPException(status_code=404, detail="File not found")
         
-        # Download from storage
         data, content_type = get_object(path)
         return Response(content=data, media_type=record.get("content_type", content_type))
     except HTTPException:
@@ -235,7 +239,6 @@ async def get_projects(category: Optional[str] = None, tag: Optional[str] = None
         
         projects = await db.projects.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
         
-        # Convert ISO strings back to datetime
         for project in projects:
             if isinstance(project.get('created_at'), str):
                 project['created_at'] = datetime.fromisoformat(project['created_at'])
@@ -256,7 +259,6 @@ async def get_project(project_id: str):
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
         
-        # Convert ISO strings back to datetime
         if isinstance(project.get('created_at'), str):
             project['created_at'] = datetime.fromisoformat(project['created_at'])
         if isinstance(project.get('updated_at'), str):
@@ -274,21 +276,17 @@ async def get_project(project_id: str):
 async def update_project(project_id: str, update_data: ProjectUpdate):
     """Update a project"""
     try:
-        # Get existing project
         existing = await db.projects.find_one({"id": project_id}, {"_id": 0})
         if not existing:
             raise HTTPException(status_code=404, detail="Project not found")
         
-        # Update fields
         update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
         update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
         
         await db.projects.update_one({"id": project_id}, {"$set": update_dict})
         
-        # Get updated project
         updated = await db.projects.find_one({"id": project_id}, {"_id": 0})
         
-        # Convert ISO strings back to datetime
         if isinstance(updated.get('created_at'), str):
             updated['created_at'] = datetime.fromisoformat(updated['created_at'])
         if isinstance(updated.get('updated_at'), str):
@@ -317,43 +315,6 @@ async def delete_project(project_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.post("/projects/{project_id}/images")
-async def add_project_image(project_id: str, storage_path: str):
-    """Add image to project"""
-    try:
-        result = await db.projects.update_one(
-            {"id": project_id},
-            {"$push": {"images": storage_path}}
-        )
-        if result.matched_count == 0:
-            raise HTTPException(status_code=404, detail="Project not found")
-        return {"message": "Image added successfully"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Add image failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@api_router.post("/projects/{project_id}/cover")
-async def set_project_cover(project_id: str, storage_path: str):
-    """Set project cover image"""
-    try:
-        result = await db.projects.update_one(
-            {"id": project_id},
-            {"$set": {"cover_image": storage_path}}
-        )
-        if result.matched_count == 0:
-            raise HTTPException(status_code=404, detail="Project not found")
-        return {"message": "Cover image set successfully"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Set cover failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# Include the router in the main app
 app.include_router(api_router)
 
 app.add_middleware(
