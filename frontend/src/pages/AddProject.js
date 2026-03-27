@@ -97,7 +97,7 @@ export default function AddProject() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-50 relative overflow-hidden">
+    <div className="min-h-screen bg-zinc-950 text-zinc-50 relative">
       {/* Background glow */}
       <div className="fixed top-[-10%] left-[-10%] w-[600px] h-[600px] bg-amber-500/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="fixed bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-amber-600/5 rounded-full blur-[100px] pointer-events-none" />
@@ -145,7 +145,7 @@ export default function AddProject() {
       </motion.header>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-12">
+      <div className="max-w-7xl mx-auto px-6 py-12 pb-20">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left Column - Main Content */}
           <div className="lg:col-span-8 space-y-8">

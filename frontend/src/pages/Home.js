@@ -30,7 +30,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-50 relative overflow-hidden">
+    <div className="min-h-screen bg-zinc-950 text-zinc-50 relative">
       {/* Background glow */}
       <div className="fixed top-[-10%] left-[-10%] w-[600px] h-[600px] bg-amber-500/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="fixed bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-amber-600/5 rounded-full blur-[100px] pointer-events-none" />
@@ -88,7 +88,7 @@ export default function Home() {
       </motion.header>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-12">
+      <div className="max-w-7xl mx-auto px-6 py-12 pb-20">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="text-zinc-400">Carregando projetos...</div>
