@@ -48,16 +48,21 @@ export default function Portfolio() {
       </motion.div>
 
       {/* Hero Section with Video */}
-      <section className="relative h-screen overflow-hidden">
+      <section className="relative overflow-hidden" style={{ height: 'calc(100vh - 120px)' }}>
         {/* Background Video */}
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 flex items-center justify-center">
           <video
             autoPlay
             loop
             muted
             playsInline
-            className="w-full h-full object-cover opacity-60"
-            style={{ filter: 'contrast(1.1)' }}
+            className="w-full opacity-60"
+            style={{ 
+              filter: 'contrast(1.1)',
+              height: 'auto',
+              minWidth: '100%',
+              objectFit: 'contain'
+            }}
             onLoadedMetadata={(e) => {
               e.target.playbackRate = 0.5;
             }}
@@ -69,10 +74,7 @@ export default function Portfolio() {
         </div>
 
         {/* Content */}
-        <div className="relative h-full flex flex-col items-center justify-between py-12">
-          {/* Spacer for top */}
-          <div />
-
+        <div className="relative h-full flex flex-col items-center justify-center py-12">
           {/* Main Title in center */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -95,28 +97,6 @@ export default function Portfolio() {
                 design & tecnologia
               </p>
             </div>
-          </motion.div>
-
-          {/* Scroll indicator */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 1 }}
-            className="flex flex-col items-center gap-2"
-          >
-            <span 
-              className="text-sm text-black/60 tracking-widest uppercase"
-              style={{ fontFamily: 'EB Garamond, serif' }}
-            >
-              Explore
-            </span>
-            <motion.div
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              className="w-6 h-10 border-2 border-black/30 rounded-full flex items-start justify-center p-2"
-            >
-              <div className="w-1.5 h-1.5 bg-black/60 rounded-full" />
-            </motion.div>
           </motion.div>
         </div>
       </section>
