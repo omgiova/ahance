@@ -100,7 +100,7 @@ class Project(BaseModel):
     description: str = ""
     cover_image: Optional[str] = None
     category: str = ""
-    tags: List[str] = []
+    tags: List[Any] = []  # Pode ser string (legado) ou objeto com name, bgColor, textColor
     tools: List[str] = []
     visibility: str = "public"
     published: bool = False
@@ -113,10 +113,12 @@ class ProjectCreate(BaseModel):
     title: str
     description: str = ""
     category: str = ""
-    tags: List[str] = []
+    tags: List[Any] = []  # Pode ser string (legado) ou objeto com name, bgColor, textColor
     tools: List[str] = []
     visibility: str = "public"
     published: bool = False
+    blocks: List[Dict[str, Any]] = []
+    cover_image: Optional[str] = None
 
 
 class ProjectUpdate(BaseModel):
@@ -124,7 +126,7 @@ class ProjectUpdate(BaseModel):
     description: Optional[str] = None
     cover_image: Optional[str] = None
     category: Optional[str] = None
-    tags: Optional[List[str]] = None
+    tags: Optional[List[Any]] = None  # Pode ser string (legado) ou objeto com name, bgColor, textColor
     tools: Optional[List[str]] = None
     visibility: Optional[str] = None
     published: Optional[bool] = None
@@ -221,7 +223,15 @@ async def create_project(project_data: ProjectCreate):
         doc['updated_at'] = doc['updated_at'].isoformat()
         
         await db.projects.insert_one(doc)
-        return project
+        
+        # Return without _id
+        return_doc = await db.projects.find_one({"id": project.id}, {"_id": 0})
+        if isinstance(return_doc.get('created_at'), str):
+            return_doc['created_at'] = datetime.fromisoformat(return_doc['created_at'])
+        if isinstance(return_doc.get('updated_at'), str):
+            return_doc['updated_at'] = datetime.fromisoformat(return_doc['updated_at'])
+        
+        return return_doc
     except Exception as e:
         logger.error(f"Create project failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -345,7 +355,10 @@ async def create_tag(tag: dict):
         }
         
         await db.tags.insert_one(tag_doc)
-        return tag_doc
+        
+        # Return without _id
+        return_doc = await db.tags.find_one({"id": tag_doc["id"]}, {"_id": 0})
+        return return_doc
     except HTTPException:
         raise
     except Exception as e:

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { X, Plus, Trash2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,16 @@ import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Paleta de cores baseada no laranja principal #e38e4d
+// 2 tons claros (entre laranja e branco) + laranja principal + 2 tons escuros (entre laranja e preto)
+const COLOR_PALETTE = [
+  { bg: '#f6dfcf', text: '#674011', label: 'Claro 1' },
+  { bg: '#edb78e', text: '#674011', label: 'Claro 2' },
+  { bg: '#e38e4d', text: '#ffffff', label: 'Principal' },
+  { bg: '#a5672f', text: '#ffffff', label: 'Escuro 1' },
+  { bg: '#674011', text: '#ffffff', label: 'Escuro 2' },
+];
 
 export default function ProjectSettings({
   description,
@@ -23,8 +33,8 @@ export default function ProjectSettings({
 }) {
   const [allTags, setAllTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
-  const [tagTextColor, setTagTextColor] = useState('#000000');
-  const [tagBgColor, setTagBgColor] = useState('#ffffff');
+  const [tagTextColor, setTagTextColor] = useState('#ffffff');
+  const [tagBgColor, setTagBgColor] = useState('#e38e4d');
   const [loadingTags, setLoadingTags] = useState(true);
 
   useEffect(() => {
@@ -193,36 +203,53 @@ export default function ProjectSettings({
             </Button>
           </div>
 
-          {/* Color pickers for new tag */}
+          {/* Color palette for new tag */}
           {tagInput.trim() && (
-            <div className="grid grid-cols-2 gap-3 p-3 bg-black/5 rounded-lg">
+            <div className="p-4 bg-black/5 rounded-lg space-y-4">
+              {/* Color Palette Selection */}
               <div>
-                <label className="text-xs text-black/60 block mb-1" style={{ fontFamily: 'EB Garamond, serif' }}>Cor do texto</label>
-                <input
-                  type="color"
-                  value={tagTextColor}
-                  onChange={(e) => setTagTextColor(e.target.value)}
-                  className="w-full h-10 rounded cursor-pointer border border-black/20"
-                />
+                <label className="text-xs text-black/60 block mb-2" style={{ fontFamily: 'EB Garamond, serif' }}>
+                  Selecione uma cor
+                </label>
+                <div className="flex gap-2">
+                  {COLOR_PALETTE.map((color, index) => {
+                    const isSelected = tagBgColor === color.bg && tagTextColor === color.text;
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          setTagBgColor(color.bg);
+                          setTagTextColor(color.text);
+                        }}
+                        className={`relative w-10 h-10 rounded-lg transition-all ${
+                          isSelected ? 'ring-2 ring-black ring-offset-2' : 'hover:scale-110'
+                        }`}
+                        style={{ backgroundColor: color.bg }}
+                        title={color.label}
+                      >
+                        {isSelected && (
+                          <Check 
+                            className="absolute inset-0 m-auto w-5 h-5" 
+                            style={{ color: color.text }}
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+
+              {/* Preview */}
               <div>
-                <label className="text-xs text-black/60 block mb-1" style={{ fontFamily: 'EB Garamond, serif' }}>Cor de fundo</label>
-                <input
-                  type="color"
-                  value={tagBgColor}
-                  onChange={(e) => setTagBgColor(e.target.value)}
-                  className="w-full h-10 rounded cursor-pointer border border-black/20"
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="text-xs text-black/60 block mb-1" style={{ fontFamily: 'EB Garamond, serif' }}>Preview</label>
+                <label className="text-xs text-black/60 block mb-2" style={{ fontFamily: 'EB Garamond, serif' }}>
+                  Preview da tag
+                </label>
                 <div
-                  className="rounded-full px-3 py-1 text-xs inline-block"
+                  className="rounded-full px-4 py-1.5 text-sm inline-block font-medium"
                   style={{
                     fontFamily: 'EB Garamond, serif',
                     backgroundColor: tagBgColor,
-                    color: tagTextColor,
-                    border: `1px solid ${tagBgColor}`
+                    color: tagTextColor
                   }}
                 >
                   {tagInput || 'Sua tag aqui'}

@@ -296,16 +296,27 @@ export default function Portfolio() {
                         </span>
                       )}
                       {project.tags && project.tags.length > 0 && (
-                        <div className="flex items-center gap-2">
-                          {project.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="text-xs px-3 py-1 bg-white border border-black/10 rounded-full text-black/60"
-                              style={{ fontFamily: 'EB Garamond, serif' }}
-                            >
-                              {tag}
-                            </span>
-                          ))}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {project.tags.map((tag, tagIndex) => {
+                            // Suporta tags como string (legado) ou objeto com cores
+                            const tagName = typeof tag === 'string' ? tag : tag.name;
+                            const bgColor = typeof tag === 'object' ? tag.bgColor : '#e38e4d';
+                            const textColor = typeof tag === 'object' ? tag.textColor : '#ffffff';
+                            
+                            return (
+                              <span
+                                key={tagIndex}
+                                className="text-xs px-3 py-1 rounded-full font-medium"
+                                style={{ 
+                                  fontFamily: 'EB Garamond, serif',
+                                  backgroundColor: bgColor,
+                                  color: textColor
+                                }}
+                              >
+                                {tagName}
+                              </span>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
