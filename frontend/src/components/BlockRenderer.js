@@ -11,10 +11,28 @@ export default function BlockRenderer({ block }) {
   const renderBlock = () => {
     switch (block.type) {
       case 'text':
+        const textFontSize = {
+          'sm': 'text-sm',
+          'base': 'text-base',
+          'lg': 'text-lg',
+          'xl': 'text-xl',
+          '2xl': 'text-2xl'
+        }[block.settings?.fontSize || 'base'];
+        
+        const textFontFamily = {
+          'serif': 'EB Garamond, serif',
+          'sans': 'Arial, sans-serif',
+          'mono': 'Courier New, monospace',
+          'georgia': 'Georgia, serif',
+          'verdana': 'Verdana, sans-serif'
+        }[block.settings?.fontFamily || 'serif'];
+        
         return (
           <div 
-            className="prose prose-lg max-w-none text-black/80"
-            style={{ fontFamily: 'EB Garamond, serif' }}
+            className={`prose max-w-none text-black/80 ${textFontSize} ${
+              block.settings?.bold ? 'font-bold' : ''
+            } ${block.settings?.italic ? 'italic' : ''}`}
+            style={{ fontFamily: textFontFamily }}
           >
             <p className="whitespace-pre-wrap">{block.content.text}</p>
           </div>
