@@ -16,7 +16,7 @@
   }
   
   body {
-    @apply bg-[#F5F1E8] text-black;
+    @apply bg-[#fffeec] text-black;
     font-family: 'EB Garamond', serif;
     overflow-x: hidden;
     overflow-y: auto;
@@ -49,6 +49,6 @@ body, #root, .App {
 
 /* Custom selection color */
 ::selection {
-  background-color: #E89B6D;
+  background-color: #e38e4d;
   color: #000;
 }

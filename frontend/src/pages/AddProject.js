@@ -94,16 +94,16 @@ export default function AddProject() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F1E8] text-black relative">
+    <div className="min-h-screen bg-[#fffeec] text-black relative">
       {/* Decorative circles */}
-      <div className="fixed top-10 right-10 w-32 h-32 bg-[#E89B6D]/20 rounded-full pointer-events-none" />
-      <div className="fixed bottom-20 left-10 w-24 h-24 bg-[#E89B6D]/30 rounded-full pointer-events-none" />
+      <div className="fixed top-10 right-10 w-32 h-32 bg-[#e38e4d]/20 rounded-full pointer-events-none" />
+      <div className="fixed bottom-20 left-10 w-24 h-24 bg-[#e38e4d]/30 rounded-full pointer-events-none" />
 
       {/* Header */}
       <motion.header
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="sticky top-0 z-50 bg-[#F5F1E8]/80 backdrop-blur-sm border-b border-black/10"
+        className="sticky top-0 z-50 bg-[#fffeec]/80 backdrop-blur-sm border-b border-black/10"
       >
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-6">
@@ -134,7 +134,7 @@ export default function AddProject() {
               data-testid="publish-btn"
               onClick={handlePublish}
               disabled={isSaving}
-              className="bg-[#E89B6D] text-black hover:bg-[#E89B6D]/90 rounded-full px-8 font-normal"
+              className="bg-[#e38e4d] text-black hover:bg-[#e38e4d]/90 rounded-full px-8 font-normal"
               style={{ fontFamily: 'EB Garamond, serif' }}
             >
               {isSaving ? 'Publicando...' : 'Publicar Projeto'}

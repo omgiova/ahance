@@ -9,7 +9,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const VIDEO_URL = 'https://customer-assets.emergentagent.com/job_behance-style/artifacts/zeh5zsql_ascii-video-1775235924403.mp4';
-const LOGO_URL = 'https://customer-assets.emergentagent.com/job_behance-style/artifacts/ket683ao_EB%20Garamond%20%282%29.pdf';
+const LOGO_URL = 'https://customer-assets.emergentagent.com/job_behance-style/artifacts/ccsqrvdt_EB%20Garamond%20%281%29.png';
 
 export default function Portfolio() {
   const navigate = useNavigate();
@@ -32,7 +32,21 @@ export default function Portfolio() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F1E8]">
+    <div className="min-h-screen bg-[#fffeec]">
+      {/* Logo Section - Before Video */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+        className="relative z-10 py-12 flex justify-center bg-[#fffeec]"
+      >
+        <img 
+          src={LOGO_URL} 
+          alt="Giovani Amorim Logo" 
+          className="w-64 md:w-80 h-auto"
+        />
+      </motion.div>
+
       {/* Hero Section with Video */}
       <section className="relative h-screen overflow-hidden">
         {/* Background Video */}
@@ -50,23 +64,14 @@ export default function Portfolio() {
           >
             <source src={VIDEO_URL} type="video/mp4" />
           </video>
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-[#F5F1E8]/40" />
+          {/* Overlay - Reduced opacity */}
+          <div className="absolute inset-0 bg-[#fffeec]/25" />
         </div>
 
         {/* Content */}
         <div className="relative h-full flex flex-col items-center justify-between py-12">
-          {/* Logo at top */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1 }}
-            className="flex flex-col items-center gap-4"
-          >
-            <div className="w-32 h-32 bg-[#E89B6D] rounded-full flex items-center justify-center">
-              <span className="text-6xl" style={{ fontFamily: 'EB Garamond, serif' }}>GA</span>
-            </div>
-          </motion.div>
+          {/* Spacer for top */}
+          <div />
 
           {/* Main Title in center */}
           <motion.div
@@ -82,7 +87,7 @@ export default function Portfolio() {
               criatividade
             </h1>
             <div className="flex items-center justify-center gap-4">
-              <div className="w-16 h-16 bg-[#E89B6D] rounded-full" />
+              <div className="w-16 h-16 bg-[#e38e4d] rounded-full" />
               <p 
                 className="text-2xl md:text-3xl text-black/80"
                 style={{ fontFamily: 'EB Garamond, serif' }}
@@ -122,7 +127,7 @@ export default function Portfolio() {
         <div className="mb-16 flex items-end justify-between">
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-3 h-3 bg-[#E89B6D] rounded-full" />
+              <div className="w-3 h-3 bg-[#e38e4d] rounded-full" />
               <span 
                 className="text-sm uppercase tracking-widest text-black/60"
                 style={{ fontFamily: 'EB Garamond, serif' }}
@@ -139,7 +144,7 @@ export default function Portfolio() {
           </div>
           <Button
             onClick={() => navigate('/admin/add-project')}
-            className="hidden md:flex items-center gap-2 bg-black text-[#F5F1E8] hover:bg-black/90 rounded-full px-8 py-6 text-lg"
+            className="hidden md:flex items-center gap-2 bg-black text-[#fffeec] hover:bg-black/90 rounded-full px-8 py-6 text-lg"
             style={{ fontFamily: 'EB Garamond, serif' }}
           >
             Novo Projeto
@@ -160,8 +165,8 @@ export default function Portfolio() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center py-20"
           >
-            <div className="w-24 h-24 bg-[#E89B6D]/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Plus className="w-12 h-12 text-[#E89B6D]" />
+            <div className="w-24 h-24 bg-[#e38e4d]/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Plus className="w-12 h-12 text-[#e38e4d]" />
             </div>
             <h3 
               className="text-3xl font-normal mb-4 text-black"
@@ -177,7 +182,7 @@ export default function Portfolio() {
             </p>
             <Button
               onClick={() => navigate('/admin/add-project')}
-              className="bg-black text-[#F5F1E8] hover:bg-black/90 rounded-full px-8 py-6 text-lg"
+              className="bg-black text-[#fffeec] hover:bg-black/90 rounded-full px-8 py-6 text-lg"
               style={{ fontFamily: 'EB Garamond, serif' }}
             >
               Criar Projeto
@@ -205,7 +210,7 @@ export default function Portfolio() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <div className="w-32 h-32 bg-[#E89B6D]/30 rounded-full" />
+                      <div className="w-32 h-32 bg-[#e38e4d]/30 rounded-full" />
                     </div>
                   )}
                   {/* Hover Overlay */}
@@ -216,7 +221,7 @@ export default function Portfolio() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <h3 
-                      className="text-3xl font-normal mb-2 text-black group-hover:text-[#E89B6D] transition-colors"
+                      className="text-3xl font-normal mb-2 text-black group-hover:text-[#e38e4d] transition-colors"
                       style={{ fontFamily: 'EB Garamond, serif' }}
                     >
                       {project.title}
@@ -231,14 +236,14 @@ export default function Portfolio() {
                     )}
                     {project.category && (
                       <span 
-                        className="inline-block text-sm uppercase tracking-widest text-[#E89B6D]"
+                        className="inline-block text-sm uppercase tracking-widest text-[#e38e4d]"
                         style={{ fontFamily: 'EB Garamond, serif' }}
                       >
                         {project.category}
                       </span>
                     )}
                   </div>
-                  <ArrowRight className="w-6 h-6 text-black/40 group-hover:text-[#E89B6D] group-hover:translate-x-2 transition-all" />
+                  <ArrowRight className="w-6 h-6 text-black/40 group-hover:text-[#e38e4d] group-hover:translate-x-2 transition-all" />
                 </div>
               </motion.div>
             ))}
@@ -261,7 +266,7 @@ export default function Portfolio() {
       {/* Mobile FAB */}
       <Button
         onClick={() => navigate('/admin/add-project')}
-        className="md:hidden fixed bottom-8 right-8 w-16 h-16 rounded-full bg-[#E89B6D] hover:bg-[#E89B6D]/90 shadow-2xl flex items-center justify-center"
+        className="md:hidden fixed bottom-8 right-8 w-16 h-16 rounded-full bg-[#e38e4d] hover:bg-[#e38e4d]/90 shadow-2xl flex items-center justify-center"
       >
         <Plus className="w-6 h-6 text-black" />
       </Button>
