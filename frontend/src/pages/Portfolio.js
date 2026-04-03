@@ -48,9 +48,9 @@ export default function Portfolio() {
       </motion.div>
 
       {/* Hero Section with Video */}
-      <section className="relative overflow-hidden" style={{ height: 'calc(100vh - 120px)' }}>
-        {/* Background Video */}
-        <div className="absolute inset-0 flex items-center justify-center">
+      <section className="relative overflow-hidden">
+        {/* Background Video - Full width, auto height */}
+        <div className="relative w-full">
           <video
             autoPlay
             loop
@@ -59,9 +59,9 @@ export default function Portfolio() {
             className="w-full opacity-60"
             style={{ 
               filter: 'contrast(1.1)',
-              height: 'auto',
-              minWidth: '100%',
-              objectFit: 'contain'
+              display: 'block',
+              width: '100%',
+              height: 'auto'
             }}
             onLoadedMetadata={(e) => {
               e.target.playbackRate = 0.5;
@@ -70,11 +70,11 @@ export default function Portfolio() {
             <source src={VIDEO_URL} type="video/mp4" />
           </video>
           {/* Overlay - Reduced opacity */}
-          <div className="absolute inset-0 bg-[#fffeec]/25" />
+          <div className="absolute inset-0 bg-[#fffeec]/25 pointer-events-none" />
         </div>
 
-        {/* Content */}
-        <div className="relative h-full flex flex-col items-center justify-center py-12">
+        {/* Content Overlay on Video */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center py-12">
           {/* Main Title in center */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
