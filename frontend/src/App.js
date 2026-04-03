@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import Portfolio from '@/pages/Portfolio';
 import AddProject from '@/pages/AddProject';
+import AdminDashboard from '@/pages/AdminDashboard';
 
 function App() {
   return (
@@ -11,7 +12,9 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Portfolio />} />
+          <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/add-project" element={<AddProject />} />
+          <Route path="/admin/edit-project/:id" element={<AddProject />} />
         </Routes>
       </BrowserRouter>
       <Toaster 

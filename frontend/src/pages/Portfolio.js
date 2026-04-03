@@ -111,7 +111,7 @@ export default function Portfolio() {
             
             {/* Admin Link */}
             <button
-              onClick={() => navigate('/admin/add-project')}
+              onClick={() => navigate('/admin')}
               className="text-sm text-black/30 hover:text-black/50 transition-colors uppercase tracking-wider"
               style={{ fontFamily: 'EB Garamond, serif' }}
             >
@@ -144,7 +144,7 @@ export default function Portfolio() {
             loop
             muted
             playsInline
-            className="w-full opacity-60"
+            className="w-full opacity-90"
             style={{ 
               filter: 'contrast(1.1)',
               display: 'block',
