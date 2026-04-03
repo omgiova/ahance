@@ -226,44 +226,6 @@ export default function ProjectSettings({
           </div>
         </div>
       </div>
-
-      {/* Tools */}
-      <div className="bg-white/50 border border-black/10 rounded-2xl p-6">
-        <Label className="text-xs font-normal uppercase tracking-widest text-black/60 mb-3 block" style={{ fontFamily: 'EB Garamond, serif' }}>Ferramentas</Label>
-        <div className="flex flex-wrap gap-2">
-          {tools.map((tool) => (
-            <button
-              key={tool}
-              data-testid={`tool-${tool.toLowerCase().replace(/\\s+/g, '-')}`}
-              onClick={() => toggleTool(tool)}
-              className={`rounded-full px-3 py-1 text-xs border transition-colors ${
-                selectedTools.includes(tool)
-                  ? 'bg-[#e38e4d] border-[#e38e4d] text-black'
-                  : 'bg-white border-black/20 text-black hover:bg-black/5'
-              }`}
-              style={{ fontFamily: 'EB Garamond, serif' }}
-            >
-              {tool}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Visibility */}
-      <div className="bg-white/50 border border-black/10 rounded-2xl p-6">
-        <Label className="text-xs font-normal uppercase tracking-widest text-black/60 mb-3 block" style={{ fontFamily: 'EB Garamond, serif' }}>Visibilidade</Label>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-black" style={{ fontFamily: 'EB Garamond, serif' }}>
-            {isPublic ? 'Público' : 'Privado'}
-          </span>
-          <Switch
-            data-testid="visibility-toggle"
-            checked={isPublic}
-            onCheckedChange={setIsPublic}
-            className="data-[state=checked]:bg-[#e38e4d]"
-          />
-        </div>
-      </div>
     </motion.div>
   );
 }
