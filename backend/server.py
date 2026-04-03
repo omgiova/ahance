@@ -315,6 +315,59 @@ async def delete_project(project_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# Tags endpoints
+@api_router.get("/tags")
+async def get_all_tags():
+    """Get all global tags"""
+    try:
+        tags = await db.tags.find({}, {"_id": 0}).to_list(1000)
+        return tags
+    except Exception as e:
+        logger.error(f"Get tags failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/tags")
+async def create_tag(tag: dict):
+    """Create a new global tag"""
+    try:
+        # Check if tag name already exists
+        existing = await db.tags.find_one({"name": tag["name"]})
+        if existing:
+            raise HTTPException(status_code=400, detail="Tag already exists")
+        
+        tag_doc = {
+            "id": str(uuid.uuid4()),
+            "name": tag["name"],
+            "textColor": tag.get("textColor", "#000000"),
+            "bgColor": tag.get("bgColor", "#ffffff"),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.tags.insert_one(tag_doc)
+        return tag_doc
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Create tag failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.delete("/tags/{tag_id}")
+async def delete_tag(tag_id: str):
+    """Delete a global tag"""
+    try:
+        result = await db.tags.delete_one({"id": tag_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Tag not found")
+        return {"message": "Tag deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Delete tag failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 app.include_router(api_router)
 
 app.add_middleware(
