@@ -171,13 +171,13 @@ export default function Portfolio() {
             className="text-center px-6"
           >
             <h1 
-              className="text-7xl md:text-9xl font-normal text-black mb-4"
+              className="text-6xl md:text-7xl font-normal text-black mb-4"
               style={{ fontFamily: 'EB Garamond, serif', lineHeight: '1.1' }}
             >
               redator
             </h1>
             <h2 
-              className="text-7xl md:text-9xl font-normal text-black"
+              className="text-6xl md:text-7xl font-normal text-black"
               style={{ fontFamily: 'EB Garamond, serif', lineHeight: '1.1' }}
             >
               estrategista de conteúdo
