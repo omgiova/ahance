@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Settings, X } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,7 +53,6 @@ export default function AddProject() {
   const [isPublic, setIsPublic] = useState(true);
   const [blocks, setBlocks] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [showSettings, setShowSettings] = useState(true); // Sidebar aberto por padrão
 
   useEffect(() => {
     if (isEditing) {
@@ -74,8 +73,6 @@ export default function AddProject() {
       setCoverImage(project.cover_image || null);
       setIsPublic(project.visibility === 'public');
       setBlocks(project.blocks || []);
-      
-      toast.success('Projeto carregado!');
     } catch (error) {
       console.error('Load project error:', error);
       toast.error('Erro ao carregar projeto');
@@ -187,17 +184,6 @@ export default function AddProject() {
               Portfólio / <span className="text-black">{isEditing ? 'Editar Projeto' : 'Novo Projeto'}</span>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            {/* Botão toggle sidebar - apenas ícone */}
-            <Button
-              data-testid="settings-btn"
-              onClick={() => setShowSettings(!showSettings)}
-              variant="ghost"
-              className="text-black/60 hover:text-black"
-            >
-              {showSettings ? <X className="w-5 h-5" /> : <Settings className="w-5 h-5" />}
-            </Button>
-          </div>
         </div>
       </motion.header>
 
@@ -231,27 +217,22 @@ export default function AddProject() {
             />
           </div>
 
-          {/* Right Column - Settings Sidebar */}
-          <AnimatePresence>
-            {showSettings && (
-              <ProjectSettings
-                description={description}
-                setDescription={setDescription}
-                category={category}
-                setCategory={setCategory}
-                categories={CATEGORIES}
-                selectedTags={selectedTags}
-                setSelectedTags={setSelectedTags}
-                selectedTools={selectedTools}
-                setSelectedTools={setSelectedTools}
-                tools={TOOLS}
-                isPublic={isPublic}
-                setIsPublic={setIsPublic}
-                coverImage={coverImage}
-                onClose={() => setShowSettings(false)}
-              />
-            )}
-          </AnimatePresence>
+          {/* Right Column - Settings Sidebar (sempre visível) */}
+          <ProjectSettings
+            description={description}
+            setDescription={setDescription}
+            category={category}
+            setCategory={setCategory}
+            categories={CATEGORIES}
+            selectedTags={selectedTags}
+            setSelectedTags={setSelectedTags}
+            selectedTools={selectedTools}
+            setSelectedTools={setSelectedTools}
+            tools={TOOLS}
+            isPublic={isPublic}
+            setIsPublic={setIsPublic}
+            coverImage={coverImage}
+          />
         </div>
       </div>
 

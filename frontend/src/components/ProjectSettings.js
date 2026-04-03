@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Plus, Trash2, Check } from 'lucide-react';
+import { Plus, Trash2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -121,18 +121,6 @@ export default function ProjectSettings({
       exit={{ opacity: 0, x: 20 }}
       className="lg:col-span-4 space-y-6"
     >
-      {/* Close Button */}
-      <div className="flex justify-end">
-        <Button
-          onClick={onClose}
-          variant="ghost"
-          size="sm"
-          className="text-black/60 hover:text-black"
-        >
-          <X className="w-5 h-5" />
-        </Button>
-      </div>
-
       {/* Cover Image Preview */}
       {coverImage && (
         <div className="bg-white/50 border border-black/10 rounded-2xl p-6">
