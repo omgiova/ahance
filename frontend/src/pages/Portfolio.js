@@ -151,8 +151,8 @@ export default function Portfolio() {
         </div>
 
         {/* Content Overlay on Video */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center py-12">
-          {/* Main Title in center */}
+        <div className="absolute inset-0 flex flex-col items-center justify-start pt-32 py-12">
+          {/* Main Title - moved up */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -163,17 +163,14 @@ export default function Portfolio() {
               className="text-7xl md:text-9xl font-normal text-black mb-6"
               style={{ fontFamily: 'EB Garamond, serif', lineHeight: '1.1' }}
             >
-              criatividade
+              redator
             </h1>
-            <div className="flex items-center justify-center gap-4">
-              <div className="w-16 h-16 bg-[#e38e4d] rounded-full" />
-              <p 
-                className="text-2xl md:text-3xl text-black/80"
-                style={{ fontFamily: 'EB Garamond, serif' }}
-              >
-                design & tecnologia
-              </p>
-            </div>
+            <h2 
+              className="text-4xl md:text-5xl font-normal text-black/80"
+              style={{ fontFamily: 'EB Garamond, serif' }}
+            >
+              estrategista de conteúdo
+            </h2>
           </motion.div>
         </div>
       </section>
