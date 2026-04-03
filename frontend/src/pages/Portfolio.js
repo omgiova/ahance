@@ -121,12 +121,12 @@ export default function Portfolio() {
         </div>
       </motion.header>
 
-      {/* Logo Section */}
+      {/* Logo Section - colado com header (56px do header fixo) */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1 }}
-        className="relative z-10 pt-24 pb-12 flex justify-center bg-[#fffeec]"
+        className="relative z-10 pt-[56px] flex justify-center bg-[#fffeec]"
       >
         <img 
           src={LOGO_URL} 
@@ -135,7 +135,7 @@ export default function Portfolio() {
         />
       </motion.div>
 
-      {/* Hero Section with Video */}
+      {/* Hero Section with Video - colado com logo */}
       <section className="relative overflow-hidden">
         {/* Background Video - Full width, auto height */}
         <div className="relative w-full">

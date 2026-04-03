@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Settings, X } from 'lucide-react';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -188,22 +188,14 @@ export default function AddProject() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* Botão toggle sidebar - apenas ícone */}
             <Button
               data-testid="settings-btn"
               onClick={() => setShowSettings(!showSettings)}
-              className="rounded-full px-6 py-2 border border-black/20 bg-transparent hover:bg-black/5 text-black"
-              style={{ fontFamily: 'EB Garamond, serif' }}
+              variant="ghost"
+              className="text-black/60 hover:text-black"
             >
-              Configurações
-            </Button>
-            <Button
-              data-testid="publish-btn"
-              onClick={() => handlePublish(false)}
-              disabled={isSaving}
-              className="bg-[#e38e4d] text-black hover:bg-[#e38e4d]/90 rounded-full px-8 font-normal"
-              style={{ fontFamily: 'EB Garamond, serif' }}
-            >
-              {isSaving ? 'Salvando...' : (isEditing ? 'Atualizar Projeto' : 'Publicar Projeto')}
+              {showSettings ? <X className="w-5 h-5" /> : <Settings className="w-5 h-5" />}
             </Button>
           </div>
         </div>
@@ -263,35 +255,33 @@ export default function AddProject() {
         </div>
       </div>
 
-      {/* Floating Action Bar */}
+      {/* Floating Action Bar - Centralizado */}
       <motion.div
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.5 }}
-        className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-sm border-t border-black/10 shadow-lg"
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40"
       >
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="text-sm text-black/60" style={{ fontFamily: 'EB Garamond, serif' }}>
-            {blocks.length} bloco(s) • {title || 'Sem título'}
-          </div>
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={() => handlePublish(true)}
-              disabled={isSaving}
-              className="rounded-full px-6 py-2 border border-black/20 bg-transparent hover:bg-black/5 text-black"
-              style={{ fontFamily: 'EB Garamond, serif' }}
-            >
-              {isSaving ? 'Salvando...' : 'Salvar Rascunho'}
-            </Button>
-            <Button
-              onClick={() => handlePublish(false)}
-              disabled={isSaving}
-              className="bg-[#e38e4d] text-black hover:bg-[#e38e4d]/90 rounded-full px-8 font-normal"
-              style={{ fontFamily: 'EB Garamond, serif' }}
-            >
-              {isSaving ? 'Salvando...' : (isEditing ? 'Salvar e Publicar' : 'Publicar Projeto')}
-            </Button>
-          </div>
+        <div className="flex items-center gap-3 bg-white/95 backdrop-blur-sm border border-black/10 shadow-xl rounded-full px-6 py-3">
+          <span className="text-sm text-black/60 pr-3 border-r border-black/10" style={{ fontFamily: 'EB Garamond, serif' }}>
+            {blocks.length} bloco(s)
+          </span>
+          <Button
+            onClick={() => handlePublish(true)}
+            disabled={isSaving}
+            className="rounded-full px-6 py-2 border border-black/20 bg-transparent hover:bg-black/5 text-black"
+            style={{ fontFamily: 'EB Garamond, serif' }}
+          >
+            {isSaving ? 'Salvando...' : 'Salvar Rascunho'}
+          </Button>
+          <Button
+            onClick={() => handlePublish(false)}
+            disabled={isSaving}
+            className="bg-[#e38e4d] text-black hover:bg-[#e38e4d]/90 rounded-full px-8 font-normal"
+            style={{ fontFamily: 'EB Garamond, serif' }}
+          >
+            {isSaving ? 'Salvando...' : 'Publicar'}
+          </Button>
         </div>
       </motion.div>
     </div>

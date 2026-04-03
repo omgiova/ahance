@@ -373,11 +373,61 @@ async def delete_tag(tag_id: str):
         result = await db.tags.delete_one({"id": tag_id})
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Tag not found")
+        
+        # Remove tag from all projects that have it
+        await db.projects.update_many(
+            {"tags.id": tag_id},
+            {"$pull": {"tags": {"id": tag_id}}}
+        )
+        
         return {"message": "Tag deleted successfully"}
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Delete tag failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.put("/tags/{tag_id}")
+async def update_tag(tag_id: str, tag_update: dict):
+    """Update a global tag - changes propagate to all projects"""
+    try:
+        existing = await db.tags.find_one({"id": tag_id})
+        if not existing:
+            raise HTTPException(status_code=404, detail="Tag not found")
+        
+        # Build update dict
+        update_dict = {}
+        if "name" in tag_update:
+            update_dict["name"] = tag_update["name"]
+        if "textColor" in tag_update:
+            update_dict["textColor"] = tag_update["textColor"]
+        if "bgColor" in tag_update:
+            update_dict["bgColor"] = tag_update["bgColor"]
+        
+        if not update_dict:
+            raise HTTPException(status_code=400, detail="No fields to update")
+        
+        # Update the tag itself
+        await db.tags.update_one({"id": tag_id}, {"$set": update_dict})
+        
+        # Update tag in all projects that have it
+        # This updates the embedded tag data in all projects
+        for key, value in update_dict.items():
+            await db.projects.update_many(
+                {"tags.id": tag_id},
+                {"$set": {f"tags.$[elem].{key}": value}},
+                array_filters=[{"elem.id": tag_id}]
+            )
+        
+        # Return updated tag
+        updated = await db.tags.find_one({"id": tag_id}, {"_id": 0})
+        return updated
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Update tag failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 
