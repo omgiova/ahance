@@ -59,53 +59,64 @@ export default function Portfolio() {
         className="fixed top-0 left-0 right-0 z-50 bg-[#fffeec]/90 backdrop-blur-sm border-b border-black/10"
       >
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <nav className="flex items-center justify-center gap-8">
-            <button
-              onClick={() => scrollToSection('sobre')}
-              className="text-base text-black/70 hover:text-black transition-colors"
-              style={{ fontFamily: 'EB Garamond, serif' }}
-            >
-              Sobre
-            </button>
-            <button
-              onClick={() => scrollToSection('projetos')}
-              className="text-base text-black/70 hover:text-black transition-colors"
-              style={{ fontFamily: 'EB Garamond, serif' }}
-            >
-              Projetos
-            </button>
-            <div className="relative">
+          <nav className="flex items-center justify-between">
+            <div className="flex items-center gap-8">
               <button
-                onClick={() => setShowResumeDropdown(!showResumeDropdown)}
-                className="text-base text-black/70 hover:text-black transition-colors flex items-center gap-1"
+                onClick={() => scrollToSection('sobre')}
+                className="text-base text-black/70 hover:text-black transition-colors"
                 style={{ fontFamily: 'EB Garamond, serif' }}
               >
-                Currículo
-                <ChevronDown className="w-4 h-4" />
+                Sobre
               </button>
-              {showResumeDropdown && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="absolute top-full right-0 mt-2 bg-white border border-black/10 rounded-lg shadow-lg overflow-hidden"
+              <button
+                onClick={() => scrollToSection('projetos')}
+                className="text-base text-black/70 hover:text-black transition-colors"
+                style={{ fontFamily: 'EB Garamond, serif' }}
+              >
+                Projetos
+              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowResumeDropdown(!showResumeDropdown)}
+                  className="text-base text-black/70 hover:text-black transition-colors flex items-center gap-1"
+                  style={{ fontFamily: 'EB Garamond, serif' }}
                 >
-                  <button
-                    onClick={() => handleResumeDownload('pt')}
-                    className="block w-full px-6 py-3 text-left text-black hover:bg-black/5 transition-colors"
-                    style={{ fontFamily: 'EB Garamond, serif' }}
+                  Currículo
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                {showResumeDropdown && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="absolute top-full right-0 mt-2 bg-white border border-black/10 rounded-lg shadow-lg overflow-hidden"
                   >
-                    Português
-                  </button>
-                  <button
-                    onClick={() => handleResumeDownload('en')}
-                    className="block w-full px-6 py-3 text-left text-black hover:bg-black/5 transition-colors"
-                    style={{ fontFamily: 'EB Garamond, serif' }}
-                  >
-                    English
-                  </button>
-                </motion.div>
-              )}
+                    <button
+                      onClick={() => handleResumeDownload('pt')}
+                      className="block w-full px-6 py-3 text-left text-black hover:bg-black/5 transition-colors"
+                      style={{ fontFamily: 'EB Garamond, serif' }}
+                    >
+                      Português
+                    </button>
+                    <button
+                      onClick={() => handleResumeDownload('en')}
+                      className="block w-full px-6 py-3 text-left text-black hover:bg-black/5 transition-colors"
+                      style={{ fontFamily: 'EB Garamond, serif' }}
+                    >
+                      English
+                    </button>
+                  </motion.div>
+                )}
+              </div>
             </div>
+            
+            {/* Admin Link */}
+            <button
+              onClick={() => navigate('/admin/add-project')}
+              className="text-sm text-black/30 hover:text-black/50 transition-colors uppercase tracking-wider"
+              style={{ fontFamily: 'EB Garamond, serif' }}
+            >
+              Admin
+            </button>
           </nav>
         </div>
       </motion.header>
@@ -160,14 +171,14 @@ export default function Portfolio() {
             className="text-center px-6"
           >
             <h1 
-              className="text-7xl md:text-9xl font-normal text-black mb-6"
+              className="text-7xl md:text-9xl font-normal text-black mb-4"
               style={{ fontFamily: 'EB Garamond, serif', lineHeight: '1.1' }}
             >
               redator
             </h1>
             <h2 
-              className="text-4xl md:text-5xl font-normal text-black/80"
-              style={{ fontFamily: 'EB Garamond, serif' }}
+              className="text-7xl md:text-9xl font-normal text-black"
+              style={{ fontFamily: 'EB Garamond, serif', lineHeight: '1.1' }}
             >
               estrategista de conteúdo
             </h2>
