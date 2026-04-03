@@ -121,16 +121,14 @@ export default function ProjectSettings({
       {/* Category */}
       <div className="bg-white/50 border border-black/10 rounded-2xl p-6">
         <Label className="text-xs font-normal uppercase tracking-widest text-black/60 mb-3 block" style={{ fontFamily: 'EB Garamond, serif' }}>Categoria</Label>
-        <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger data-testid="category-select" className="bg-white border-black/20 text-black" style={{ fontFamily: 'EB Garamond, serif' }}>
-            <SelectValue placeholder="Selecione uma categoria" />
-          </SelectTrigger>
-          <SelectContent className="bg-[#fffeec] border-black/20 text-black" style={{ fontFamily: 'EB Garamond, serif' }}>
-            {categories.map((cat) => (
-              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Input
+          data-testid="category-input"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          placeholder="Ex: Design Gráfico, Ilustração, etc."
+          className="bg-white border-black/20 text-black placeholder:text-black/40 focus-visible:ring-1 focus-visible:ring-[#e38e4d]"
+          style={{ fontFamily: 'EB Garamond, serif' }}
+        />
       </div>
 
       {/* Tags with Custom Colors */}

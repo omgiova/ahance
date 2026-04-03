@@ -53,7 +53,7 @@ export default function AddProject() {
   const [isPublic, setIsPublic] = useState(true);
   const [blocks, setBlocks] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [showSettings, setShowSettings] = useState(true); // Sidebar aberto por padrão
 
   useEffect(() => {
     if (isEditing) {
