@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Save } from 'lucide-react';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import BlockEditor from '@/components/BlockEditor';
 import ProjectSettings from '@/components/ProjectSettings';
 
@@ -40,6 +40,10 @@ const TOOLS = [
 
 export default function AddProject() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditing = !!id;
+
+  const [loading, setLoading] = useState(isEditing);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -51,14 +55,38 @@ export default function AddProject() {
   const [isSaving, setIsSaving] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
+  useEffect(() => {
+    if (isEditing) {
+      loadProject();
+    }
+  }, [id]);
+
+  const loadProject = async () => {
+    try {
+      const response = await axios.get(`${API}/projects/${id}`);
+      const project = response.data;
+      
+      setTitle(project.title || '');
+      setDescription(project.description || '');
+      setCategory(project.category || '');
+      setSelectedTags(project.tags || []);
+      setSelectedTools(project.tools || []);
+      setCoverImage(project.cover_image || null);
+      setIsPublic(project.visibility === 'public');
+      setBlocks(project.blocks || []);
+      
+      toast.success('Projeto carregado!');
+    } catch (error) {
+      console.error('Load project error:', error);
+      toast.error('Erro ao carregar projeto');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handlePublish = async () => {
     if (!title.trim()) {
       toast.error('Título é obrigatório');
-      return;
-    }
-
-    if (blocks.length === 0) {
-      toast.error('Adicione pelo menos um bloco ao projeto');
       return;
     }
 
@@ -79,19 +107,36 @@ export default function AddProject() {
         cover_image: coverImage
       };
 
-      await axios.post(`${API}/projects`, projectData);
-      toast.success('Projeto publicado com sucesso!');
+      if (isEditing) {
+        // Update existing project
+        await axios.put(`${API}/projects/${id}`, projectData);
+        toast.success('Projeto atualizado com sucesso!');
+      } else {
+        // Create new project
+        await axios.post(`${API}/projects`, projectData);
+        toast.success('Projeto publicado com sucesso!');
+      }
       
       setTimeout(() => {
-        navigate('/');
+        navigate('/admin');
       }, 1000);
     } catch (error) {
-      console.error('Publish error:', error);
-      toast.error('Erro ao publicar projeto');
+      console.error('Save error:', error);
+      toast.error(isEditing ? 'Erro ao atualizar projeto' : 'Erro ao publicar projeto');
     } finally {
       setIsSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#fffeec] flex items-center justify-center">
+        <div className="text-black/60" style={{ fontFamily: 'EB Garamond, serif' }}>
+          Carregando projeto...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#fffeec] text-black relative">
@@ -109,7 +154,7 @@ export default function AddProject() {
           <div className="flex items-center gap-6">
             <Button
               variant="ghost"
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/admin')}
               className="text-black/60 hover:text-black"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -118,7 +163,7 @@ export default function AddProject() {
               Giovani Amorim
             </h1>
             <div className="text-sm text-black/60" style={{ fontFamily: 'EB Garamond, serif' }}>
-              Portfólio / <span className="text-black">Novo Projeto</span>
+              Portfólio / <span className="text-black">{isEditing ? 'Editar Projeto' : 'Novo Projeto'}</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -137,7 +182,7 @@ export default function AddProject() {
               className="bg-[#e38e4d] text-black hover:bg-[#e38e4d]/90 rounded-full px-8 font-normal"
               style={{ fontFamily: 'EB Garamond, serif' }}
             >
-              {isSaving ? 'Publicando...' : 'Publicar Projeto'}
+              {isSaving ? 'Salvando...' : (isEditing ? 'Atualizar Projeto' : 'Publicar Projeto')}
             </Button>
           </div>
         </div>
