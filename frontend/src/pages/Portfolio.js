@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, ArrowRight } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import BlockRenderer from '@/components/BlockRenderer';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -11,10 +12,16 @@ const API = `${BACKEND_URL}/api`;
 const VIDEO_URL = 'https://customer-assets.emergentagent.com/job_behance-style/artifacts/zeh5zsql_ascii-video-1775235924403.mp4';
 const LOGO_URL = 'https://customer-assets.emergentagent.com/job_behance-style/artifacts/ccsqrvdt_EB%20Garamond%20%281%29.png';
 
+const RESUME_LINKS = {
+  pt: "https://docs.google.com/document/d/10W7c_UReou8PrBh5mENUmPy4BDIwl1IdAfwX3JszphA/export?format=docx",
+  en: "https://docs.google.com/document/d/1JVeLJEUSNNVly_va0zm2fPLlJCBSMMBCJuwOAO7tqBw/export?format=docx"
+};
+
 export default function Portfolio() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showResumeDropdown, setShowResumeDropdown] = useState(false);
 
   useEffect(() => {
     fetchProjects();
@@ -31,14 +38,84 @@ export default function Portfolio() {
     }
   };
 
+  const scrollToSection = (id) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleResumeDownload = (lang) => {
+    window.open(RESUME_LINKS[lang], '_blank');
+    setShowResumeDropdown(false);
+  };
+
   return (
     <div className="min-h-screen bg-[#fffeec]">
-      {/* Logo Section - Before Video */}
+      {/* Header Navigation */}
+      <motion.header
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="fixed top-0 left-0 right-0 z-50 bg-[#fffeec]/90 backdrop-blur-sm border-b border-black/10"
+      >
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <nav className="flex items-center justify-center gap-8">
+            <button
+              onClick={() => scrollToSection('sobre')}
+              className="text-base text-black/70 hover:text-black transition-colors"
+              style={{ fontFamily: 'EB Garamond, serif' }}
+            >
+              Sobre
+            </button>
+            <button
+              onClick={() => scrollToSection('projetos')}
+              className="text-base text-black/70 hover:text-black transition-colors"
+              style={{ fontFamily: 'EB Garamond, serif' }}
+            >
+              Projetos
+            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowResumeDropdown(!showResumeDropdown)}
+                className="text-base text-black/70 hover:text-black transition-colors flex items-center gap-1"
+                style={{ fontFamily: 'EB Garamond, serif' }}
+              >
+                Currículo
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              {showResumeDropdown && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="absolute top-full right-0 mt-2 bg-white border border-black/10 rounded-lg shadow-lg overflow-hidden"
+                >
+                  <button
+                    onClick={() => handleResumeDownload('pt')}
+                    className="block w-full px-6 py-3 text-left text-black hover:bg-black/5 transition-colors"
+                    style={{ fontFamily: 'EB Garamond, serif' }}
+                  >
+                    Português
+                  </button>
+                  <button
+                    onClick={() => handleResumeDownload('en')}
+                    className="block w-full px-6 py-3 text-left text-black hover:bg-black/5 transition-colors"
+                    style={{ fontFamily: 'EB Garamond, serif' }}
+                  >
+                    English
+                  </button>
+                </motion.div>
+              )}
+            </div>
+          </nav>
+        </div>
+      </motion.header>
+
+      {/* Logo Section */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1 }}
-        className="relative z-10 py-12 flex justify-center bg-[#fffeec]"
+        className="relative z-10 pt-24 pb-12 flex justify-center bg-[#fffeec]"
       >
         <img 
           src={LOGO_URL} 
@@ -101,35 +178,57 @@ export default function Portfolio() {
         </div>
       </section>
 
-      {/* Projects Grid */}
-      <section className="max-w-7xl mx-auto px-6 py-20">
-        {/* Section Header */}
-        <div className="mb-16 flex items-end justify-between">
-          <div>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-3 h-3 bg-[#e38e4d] rounded-full" />
-              <span 
-                className="text-sm uppercase tracking-widest text-black/60"
-                style={{ fontFamily: 'EB Garamond, serif' }}
-              >
-                Portfólio
-              </span>
-            </div>
-            <h2 
-              className="text-5xl md:text-6xl font-normal text-black"
-              style={{ fontFamily: 'EB Garamond, serif' }}
-            >
-              Projetos Selecionados
-            </h2>
-          </div>
-          <Button
-            onClick={() => navigate('/admin/add-project')}
-            className="hidden md:flex items-center gap-2 bg-black text-[#fffeec] hover:bg-black/90 rounded-full px-8 py-6 text-lg"
+      {/* About Section */}
+      <section id="sobre" className="max-w-4xl mx-auto px-6 py-20">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-3 h-3 bg-[#e38e4d] rounded-full" />
+          <span 
+            className="text-sm uppercase tracking-widest text-black/60"
             style={{ fontFamily: 'EB Garamond, serif' }}
           >
-            Novo Projeto
-            <Plus className="w-5 h-5" />
-          </Button>
+            Sobre
+          </span>
+        </div>
+        <h2 
+          className="text-5xl md:text-6xl font-normal text-black mb-8"
+          style={{ fontFamily: 'EB Garamond, serif' }}
+        >
+          Giovani Amorim
+        </h2>
+        <div className="space-y-6 text-lg text-black/80" style={{ fontFamily: 'EB Garamond, serif' }}>
+          <p>
+            Designer e desenvolvedor criativo com paixão por transformar ideias em experiências digitais memoráveis. 
+            Especializado em design gráfico, branding e desenvolvimento web.
+          </p>
+          <p>
+            Com uma abordagem que une estética e funcionalidade, busco criar trabalhos que não apenas capturam a 
+            atenção, mas também comunicam mensagens de forma clara e impactante.
+          </p>
+          <p>
+            Sempre em busca de novos desafios e oportunidades para expandir os limites da criatividade no design digital.
+          </p>
+        </div>
+      </section>
+
+      {/* Projects Section */}
+      <section id="projetos" className="max-w-7xl mx-auto px-6 py-20">
+        {/* Section Header */}
+        <div className="mb-16">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-3 h-3 bg-[#e38e4d] rounded-full" />
+            <span 
+              className="text-sm uppercase tracking-widest text-black/60"
+              style={{ fontFamily: 'EB Garamond, serif' }}
+            >
+              Portfólio
+            </span>
+          </div>
+          <h2 
+            className="text-5xl md:text-6xl font-normal text-black"
+            style={{ fontFamily: 'EB Garamond, serif' }}
+          >
+            Projetos
+          </h2>
         </div>
 
         {/* Projects */}
@@ -140,92 +239,91 @@ export default function Portfolio() {
             </div>
           </div>
         ) : projects.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center py-20"
-          >
-            <div className="w-24 h-24 bg-[#e38e4d]/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Plus className="w-12 h-12 text-[#e38e4d]" />
-            </div>
-            <h3 
-              className="text-3xl font-normal mb-4 text-black"
-              style={{ fontFamily: 'EB Garamond, serif' }}
-            >
-              Nenhum projeto ainda
-            </h3>
+          <div className="text-center py-20">
             <p 
-              className="text-lg text-black/60 mb-8"
+              className="text-lg text-black/60"
               style={{ fontFamily: 'EB Garamond, serif' }}
             >
-              Comece criando seu primeiro projeto
+              Nenhum projeto publicado ainda.
             </p>
-            <Button
-              onClick={() => navigate('/admin/add-project')}
-              className="bg-black text-[#fffeec] hover:bg-black/90 rounded-full px-8 py-6 text-lg"
-              style={{ fontFamily: 'EB Garamond, serif' }}
-            >
-              Criar Projeto
-            </Button>
-          </motion.div>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          <div className="space-y-32">
             {projects.map((project, index) => (
-              <motion.div
+              <motion.article
                 key={project.id}
                 initial={{ opacity: 0, y: 40 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="group cursor-pointer"
-                onClick={() => navigate(`/project/${project.id}`)}
+                className="space-y-8"
               >
-                {/* Project Image */}
-                <div className="relative aspect-[4/3] mb-6 overflow-hidden bg-black/5">
-                  {project.cover_image ? (
-                    <img
-                      src={`${API}/files/${project.cover_image}`}
-                      alt={project.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <div className="w-32 h-32 bg-[#e38e4d]/30 rounded-full" />
-                    </div>
-                  )}
-                  {/* Hover Overlay */}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500" />
-                </div>
-
-                {/* Project Info */}
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <h3 
-                      className="text-3xl font-normal mb-2 text-black group-hover:text-[#e38e4d] transition-colors"
+                {/* Project Header */}
+                <div className="space-y-4">
+                  <h3 
+                    className="text-4xl md:text-5xl font-normal text-black"
+                    style={{ fontFamily: 'EB Garamond, serif' }}
+                  >
+                    {project.title}
+                  </h3>
+                  {project.description && (
+                    <p 
+                      className="text-lg text-black/70 max-w-3xl"
                       style={{ fontFamily: 'EB Garamond, serif' }}
                     >
-                      {project.title}
-                    </h3>
-                    {project.description && (
-                      <p 
-                        className="text-base text-black/60 line-clamp-2 mb-3"
-                        style={{ fontFamily: 'EB Garamond, serif' }}
-                      >
-                        {project.description}
-                      </p>
-                    )}
+                      {project.description}
+                    </p>
+                  )}
+                  {/* Meta Info */}
+                  <div className="flex items-center gap-4 flex-wrap">
                     {project.category && (
                       <span 
-                        className="inline-block text-sm uppercase tracking-widest text-[#e38e4d]"
+                        className="text-sm uppercase tracking-widest text-[#e38e4d]"
                         style={{ fontFamily: 'EB Garamond, serif' }}
                       >
                         {project.category}
                       </span>
                     )}
+                    {project.tags && project.tags.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        {project.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="text-xs px-3 py-1 bg-white border border-black/10 rounded-full text-black/60"
+                            style={{ fontFamily: 'EB Garamond, serif' }}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <ArrowRight className="w-6 h-6 text-black/40 group-hover:text-[#e38e4d] group-hover:translate-x-2 transition-all" />
                 </div>
-              </motion.div>
+
+                {/* Project Content - Render Blocks */}
+                <div className="space-y-8">
+                  {project.blocks && project.blocks.length > 0 ? (
+                    project.blocks
+                      .sort((a, b) => a.order - b.order)
+                      .map((block) => (
+                        <BlockRenderer key={block.id} block={block} />
+                      ))
+                  ) : (
+                    project.cover_image && (
+                      <div className="w-full">
+                        <img
+                          src={`${API}/files/${project.cover_image}`}
+                          alt={project.title}
+                          className="w-full h-auto"
+                        />
+                      </div>
+                    )
+                  )}
+                </div>
+
+                {/* Divider */}
+                <div className="pt-16 border-t border-black/10" />
+              </motion.article>
             ))}
           </div>
         )}
@@ -242,14 +340,6 @@ export default function Portfolio() {
           </p>
         </div>
       </footer>
-
-      {/* Mobile FAB */}
-      <Button
-        onClick={() => navigate('/admin/add-project')}
-        className="md:hidden fixed bottom-8 right-8 w-16 h-16 rounded-full bg-[#e38e4d] hover:bg-[#e38e4d]/90 shadow-2xl flex items-center justify-center"
-      >
-        <Plus className="w-6 h-6 text-black" />
-      </Button>
     </div>
   );
 }
