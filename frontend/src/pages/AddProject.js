@@ -4,9 +4,6 @@ import { ArrowLeft, Save } from 'lucide-react';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import BlockEditor from '@/components/BlockEditor';
@@ -97,38 +94,39 @@ export default function AddProject() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-50 relative">
-      {/* Background glow */}
-      <div className="fixed top-[-10%] left-[-10%] w-[600px] h-[600px] bg-amber-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="fixed bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-amber-600/5 rounded-full blur-[100px] pointer-events-none" />
+    <div className="min-h-screen bg-[#F5F1E8] text-black relative">
+      {/* Decorative circles */}
+      <div className="fixed top-10 right-10 w-32 h-32 bg-[#E89B6D]/20 rounded-full pointer-events-none" />
+      <div className="fixed bottom-20 left-10 w-24 h-24 bg-[#E89B6D]/30 rounded-full pointer-events-none" />
 
       {/* Header */}
       <motion.header
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="sticky top-0 z-50 backdrop-blur-2xl bg-black/40 border-b border-white/10"
+        className="sticky top-0 z-50 bg-[#F5F1E8]/80 backdrop-blur-sm border-b border-black/10"
       >
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <Button
               variant="ghost"
               onClick={() => navigate('/')}
-              className="text-zinc-400 hover:text-zinc-100"
+              className="text-black/60 hover:text-black"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <h1 className="text-2xl font-light tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
+            <h1 className="text-2xl font-normal tracking-tight" style={{ fontFamily: 'EB Garamond, serif' }}>
               Giovani Amorim
             </h1>
-            <div className="text-sm text-zinc-400" style={{ fontFamily: 'Manrope, sans-serif' }}>
-              Portfólio / <span className="text-zinc-200">Novo Projeto</span>
+            <div className="text-sm text-black/60" style={{ fontFamily: 'EB Garamond, serif' }}>
+              Portfólio / <span className="text-black">Novo Projeto</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <Button
               data-testid="settings-btn"
               onClick={() => setShowSettings(!showSettings)}
-              className="rounded-full px-6 py-2 border border-white/10 bg-white/5 hover:bg-white/10 text-white"
+              className="rounded-full px-6 py-2 border border-black/20 bg-transparent hover:bg-black/5 text-black"
+              style={{ fontFamily: 'EB Garamond, serif' }}
             >
               Configurações
             </Button>
@@ -136,7 +134,8 @@ export default function AddProject() {
               data-testid="publish-btn"
               onClick={handlePublish}
               disabled={isSaving}
-              className="bg-amber-500 text-zinc-950 hover:bg-amber-400 rounded-full px-8 font-medium hover:-translate-y-0.5 transition-transform"
+              className="bg-[#E89B6D] text-black hover:bg-[#E89B6D]/90 rounded-full px-8 font-normal"
+              style={{ fontFamily: 'EB Garamond, serif' }}
             >
               {isSaving ? 'Publicando...' : 'Publicar Projeto'}
             </Button>
@@ -153,7 +152,7 @@ export default function AddProject() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+              className="bg-white/50 border border-black/10 rounded-2xl p-8"
             >
               <input
                 data-testid="title-input"
@@ -161,8 +160,8 @@ export default function AddProject() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Título do Projeto"
-                className="w-full bg-transparent border-none text-4xl font-light text-zinc-50 placeholder:text-zinc-600 focus:outline-none"
-                style={{ fontFamily: 'Outfit, sans-serif' }}
+                className="w-full bg-transparent border-none text-5xl font-normal text-black placeholder:text-black/30 focus:outline-none"
+                style={{ fontFamily: 'EB Garamond, serif' }}
               />
             </motion.div>
 
