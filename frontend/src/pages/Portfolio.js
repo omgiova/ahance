@@ -50,8 +50,16 @@ export default function Portfolio() {
     setShowResumeDropdown(false);
   };
 
+  const DECOR_SIZES = [120, 230, 180, 220, 150, 200, 180];
+
   return (
-    <div className="min-h-screen bg-[#fffeec]">
+    <div className="min-h-screen bg-[#fffeec] relative overflow-x-hidden">
+      {/* Background Decor Layer - Fixed for Top sections */}
+      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+        {/* Solid Orange Circle - Positioned far right, centered to Sobre Section */}
+        <div className="absolute top-[150vh] right-[2vw] w-[250px] h-[250px] bg-[#e38e4d] rounded-full" />
+      </div>
+
       {/* Header Navigation */}
       <motion.header
         initial={{ y: -20, opacity: 0 }}
@@ -204,146 +212,166 @@ export default function Portfolio() {
           >
             Giovani Amorim
           </h2>
-          <div className="space-y-6 text-lg text-black/80" style={{ fontFamily: 'EB Garamond, serif' }}>
+          <div className="space-y-6 text-2xl text-black/80" style={{ fontFamily: 'EB Garamond, serif' }}>
             <p>
-              Designer e desenvolvedor criativo com paixão por transformar ideias em experiências digitais memoráveis. 
-              Especializado em design gráfico, branding e desenvolvimento web.
+              Com mais de 8 anos no cruzamento entre criatividade, estratégia e tecnologia, desenvolvo e executo campanhas que conectam marcas ao público certo por meio da minha escrita consistente e persuasiva e minha expertise em comunicação.
+
             </p>
             <p>
-              Com uma abordagem que une estética e funcionalidade, busco criar trabalhos que não apenas capturam a 
-              atenção, mas também comunicam mensagens de forma clara e impactante.
+              Não me limito à redação/ao copywriting, sou um profissional estrategista e atuo com base em métricas de performance, benchmarking, qualidade das entregas e objetivos do cliente. Minha trajetória inclui direção criativa multissetorial com alto volume de entregas em agência de marketing 360 e startup proptech, com mais de 100 clientes atendidos e mais de 300 projetos entregues.
             </p>
             <p>
-              Sempre em busca de novos desafios e oportunidades para expandir os limites da criatividade no design digital.
+              Ajudei a fundar e coordenar a comunicação de uma proptech que fez mais de R$ 60 milhões em VGV em menos de 3 anos.
             </p>
           </div>
         </div>
       </section>
 
       {/* Projects Section */}
-      <section id="projetos" className="max-w-4xl mx-auto px-6 py-20">
-        <div className="relative pl-8 border-l-2 border-[#e38e4d]">
-          {/* Section Header */}
-          <div className="mb-16">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-3 h-3 bg-[#e38e4d] rounded-full" />
-              <span 
-                className="text-sm uppercase tracking-widest text-black/60"
-                style={{ fontFamily: 'EB Garamond, serif' }}
-              >
-                Portfólio
-              </span>
-            </div>
-            <h2 
-              className="text-5xl md:text-6xl font-normal text-black"
-              style={{ fontFamily: 'EB Garamond, serif' }}
-            >
-              Projetos
-            </h2>
-          </div>
+      <section id="projetos" className="relative py-20">
+        {/* Background Layer for the entire projects section */}
+        <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-screen pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
+          {Array.from({ length: 40 }).map((_, i) => {
+            const size = DECOR_SIZES[i % DECOR_SIZES.length];
+            return (
+              <div 
+                key={i}
+                className="absolute rounded-full bg-[#e38e4d]"
+                style={{
+                  width: `${size}px`,
+                  height: `${size}px`,
+                  top: `${i * 600}px`,
+                  [i % 2 === 0 ? 'left' : 'right']: 'calc(50vw + 480px)',
+                }}
+              />
+            );
+          })}
+        </div>
 
-          {/* Projects */}
-          {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="text-black/60" style={{ fontFamily: 'EB Garamond, serif' }}>
-                Carregando projetos...
+        <div className="max-w-4xl mx-auto px-6 relative z-10">
+          <div className="relative pl-8 border-l-2 border-[#e38e4d]">
+            {/* Section Header */}
+            <div className="mb-16">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-3 h-3 bg-[#e38e4d] rounded-full" />
+                <span 
+                  className="text-sm uppercase tracking-widest text-black/60"
+                  style={{ fontFamily: 'EB Garamond, serif' }}
+                >
+                  Portfólio
+                </span>
               </div>
-            </div>
-          ) : projects.length === 0 ? (
-            <div className="text-center py-20">
-              <p 
-                className="text-lg text-black/60"
+              <h2 
+                className="text-5xl md:text-6xl font-normal text-black"
                 style={{ fontFamily: 'EB Garamond, serif' }}
               >
-                Nenhum projeto publicado ainda.
-              </p>
+                Projetos
+              </h2>
             </div>
-          ) : (
-            <div className="space-y-32">
-              {projects.map((project, index) => (
-                <motion.article
-                  key={project.id}
-                  initial={{ opacity: 0, y: 40 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  className="space-y-8"
+
+            {/* Projects */}
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-black/60" style={{ fontFamily: 'EB Garamond, serif' }}>
+                  Carregando projetos...
+                </div>
+              </div>
+            ) : projects.length === 0 ? (
+              <div className="text-center py-20">
+                <p 
+                  className="text-lg text-black/60"
+                  style={{ fontFamily: 'EB Garamond, serif' }}
                 >
-                  {/* Project Header */}
-                  <div className="space-y-4">
-                    <h3 
-                      className="text-4xl md:text-5xl font-normal text-black"
-                      style={{ fontFamily: 'EB Garamond, serif' }}
-                    >
-                      {project.title}
-                    </h3>
-                    {project.description && (
-                      <p 
-                        className="text-lg text-black/70"
+                  Nenhum projeto publicado ainda.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-32">
+                {projects.map((project, index) => (
+                  <motion.article
+                    key={project.id}
+                    initial={{ opacity: 0, y: 40 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.6, delay: index * 0.1 }}
+                    className="relative space-y-8"
+                  >
+                    {/* Project Header */}
+                    <div className="space-y-4">
+                      <h3 
+                        className="text-4xl md:text-5xl font-normal text-black"
                         style={{ fontFamily: 'EB Garamond, serif' }}
                       >
-                        {project.description}
-                      </p>
-                    )}
-                    {/* Meta Info */}
-                    <div className="flex items-center gap-4 flex-wrap">
-                      {project.category && (
-                        <span 
-                          className="text-sm uppercase tracking-widest text-[#e38e4d]"
+                        {project.title}
+                      </h3>
+                      {project.description && (
+                        <p 
+                          className="text-lg text-black/70"
                           style={{ fontFamily: 'EB Garamond, serif' }}
                         >
-                          {project.category}
-                        </span>
+                          {project.description}
+                        </p>
                       )}
-                      {project.tags && project.tags.length > 0 && (
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {project.tags
-                            .filter(tag => typeof tag === 'object' && tag.id && tag.name)
-                            .map((tag, tagIndex) => (
-                              <span
-                                key={tagIndex}
-                                className="text-xs px-3 py-1 rounded-full font-medium"
-                                style={{ 
-                                  fontFamily: 'EB Garamond, serif',
-                                  backgroundColor: tag.bgColor || '#e38e4d',
-                                  color: tag.textColor || '#ffffff'
-                                }}
-                              >
-                                {tag.name}
-                              </span>
-                            ))}
-                        </div>
+                      {/* Meta Info */}
+                      <div className="flex items-center gap-4 flex-wrap">
+                        {project.category && (
+                          <span 
+                            className="text-sm uppercase tracking-widest text-[#e38e4d]"
+                            style={{ fontFamily: 'EB Garamond, serif' }}
+                          >
+                            {project.category}
+                          </span>
+                        )}
+                        {project.tags && project.tags.length > 0 && (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {project.tags
+                              .filter(tag => typeof tag === 'object' && tag.id && tag.name)
+                              .map((tag, tagIndex) => (
+                                <span
+                                  key={tagIndex}
+                                  className="text-xs px-3 py-1 rounded-full font-medium"
+                                  style={{ 
+                                    fontFamily: 'EB Garamond, serif',
+                                    backgroundColor: tag.bgColor || '#e38e4d',
+                                    color: tag.textColor || '#ffffff'
+                                  }}
+                                >
+                                  {tag.name}
+                                </span>
+                              ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Project Content - Render Blocks */}
+                    <div className="space-y-8">
+                      {project.blocks && project.blocks.length > 0 ? (
+                        project.blocks
+                          .sort((a, b) => a.order - b.order)
+                          .map((block) => (
+                            <BlockRenderer key={block.id} block={block} />
+                          ))
+                      ) : (
+                        project.cover_image && (
+                          <div className="w-full">
+                            <img
+                              src={`${API}/files/${project.cover_image}`}
+                              alt={project.title}
+                              className="w-full h-auto"
+                            />
+                          </div>
+                        )
                       )}
                     </div>
-                  </div>
 
-                  {/* Project Content - Render Blocks */}
-                  <div className="space-y-8">
-                    {project.blocks && project.blocks.length > 0 ? (
-                      project.blocks
-                        .sort((a, b) => a.order - b.order)
-                        .map((block) => (
-                          <BlockRenderer key={block.id} block={block} />
-                        ))
-                    ) : (
-                      project.cover_image && (
-                        <div className="w-full">
-                          <img
-                            src={`${API}/files/${project.cover_image}`}
-                            alt={project.title}
-                            className="w-full h-auto"
-                          />
-                        </div>
-                      )
-                    )}
-                  </div>
-
-                  {/* Divider */}
-                  <div className="pt-16 border-t border-black/10" />
-                </motion.article>
-              ))}
-            </div>
-          )}
+                    {/* Divider */}
+                    <div className="pt-16 border-t border-black/10" />
+                  </motion.article>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </section>
 

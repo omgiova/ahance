@@ -13,6 +13,8 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [draggedId, setDraggedId] = useState(null);
+  const [dropIndex, setDropIndex] = useState(null);
 
   useEffect(() => {
     fetchProjects();
@@ -21,6 +23,7 @@ export default function AdminDashboard() {
   const fetchProjects = async () => {
     try {
       const response = await axios.get(`${API}/projects`);
+      console.log('Projetos carregados:', response.data);
       setProjects(response.data);
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -29,6 +32,86 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
+
+  const handleDragStart = (e, projectId) => {
+    setDraggedId(projectId);
+    // Set drag data to avoid browser blocking
+    e.dataTransfer.setData('text/plain', projectId);
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const midpoint = rect.height / 2;
+    const offset = e.clientY - rect.top;
+    
+    if (offset < midpoint) {
+      setDropIndex(index);
+    } else {
+      setDropIndex(index + 1);
+    }
+  };
+
+  const handleDragLeave = (e) => {
+    // Only clear if we're actually leaving the container
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setDropIndex(null);
+    }
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    if (draggedId === null || dropIndex === null) return;
+
+    const draggedIndex = projects.findIndex(p => p.id === draggedId);
+    const newProjects = [...projects];
+    
+    newProjects.splice(draggedIndex, 1);
+    let targetIndex = dropIndex;
+    if (draggedIndex < dropIndex) {
+      targetIndex--;
+    }
+    newProjects.splice(targetIndex, 0, projects[draggedIndex]);
+
+    setProjects(newProjects);
+    setDraggedId(null);
+    setDropIndex(null);
+
+    try {
+      const projectIds = newProjects.map(p => p.id);
+      await axios.put(`${API}/projects/reorder`, { project_ids: projectIds });
+      toast.success('Ordem atualizada!');
+    } catch (error) {
+      console.error('Reorder error:', error);
+      toast.error('Erro ao reordenar');
+      fetchProjects();
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+    setDropIndex(null);
+  };
+
+  // Calculate display order while dragging
+  const displayProjects = draggedId !== null && dropIndex !== null 
+    ? (() => {
+        const temp = projects.filter(p => p.id !== draggedId);
+        const draggedProject = projects.find(p => p.id === draggedId);
+        let insertIndex = dropIndex;
+        const draggedIndex = projects.findIndex(p => p.id === draggedId);
+        if (draggedIndex < dropIndex) {
+          insertIndex--;
+        }
+        temp.splice(insertIndex, 0, draggedProject);
+        return temp;
+      })()
+    : projects;
 
   const handleDelete = async (projectId, projectTitle) => {
     if (!window.confirm(`Tem certeza que deseja deletar "${projectTitle}"?`)) {
@@ -130,14 +213,33 @@ export default function AdminDashboard() {
             </Button>
           </motion.div>
         ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {projects.map((project, index) => (
+          <div 
+            className="grid grid-cols-1 gap-0"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => e.preventDefault()}
+          >
+            {displayProjects.map((project, index) => (
               <motion.div
                 key={project.id}
+                draggable
+                onDragStart={(e) => handleDragStart(e, project.id)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onDragEnd={handleDragEnd}
+                layout
                 initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-white/50 border border-black/10 rounded-2xl p-6 hover:border-[#e38e4d]/50 transition-all"
+                animate={{ 
+                  opacity: draggedId === project.id ? 0.5 : 1,
+                  y: 0
+                }}
+                transition={{ 
+                  duration: draggedId !== null ? 0.2 : 0.5,
+                  delay: draggedId !== null ? 0 : index * 0.05
+                }}
+                className={`bg-white/50 border border-black/10 rounded-2xl p-6 hover:border-[#e38e4d]/50 transition-all cursor-move mb-4 ${
+                  draggedId === project.id ? 'border-[#e38e4d]/70 shadow-lg' : ''
+                }`}
               >
                 <div className="flex items-start justify-between gap-6">
                   {/* Project Info */}
@@ -195,6 +297,12 @@ export default function AdminDashboard() {
                           {project.tags.length} tag(s)
                         </span>
                       )}
+                      <span 
+                        className="text-sm text-black/40"
+                        style={{ fontFamily: 'EB Garamond, serif' }}
+                      >
+                        Pos: {project.position}
+                      </span>
                     </div>
                   </div>
 

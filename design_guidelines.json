@@ -64,8 +64,52 @@
     "testing": "MANDATORY: All interactive elements must have data-testid attributes (e.g., data-testid='title-input', data-testid='upload-zone', data-testid='publish-btn', data-testid='visibility-toggle')."
   },
   "media_and_assets": {
-    "icons_library": "lucide-react",
-    "images": [
+    "icons_library": "lucide-react",    "video_sizing_rules": {
+      "overview": "Videos must be fully responsive and fit without distortion. Different rules apply for different contexts.",
+      "editor_context": {
+        "file": "VideoBlock.js",
+        "url_videos": {
+          "container": "relative w-full with aspectRatio: '16/9'",
+          "description": "YouTube, Vimeo, and other streaming services use 16:9 aspect ratio",
+          "responsive": "100% width, container-width height (calculated from aspect ratio)",
+          "max_height": "No max height in editor to allow full preview"
+        },
+        "uploaded_videos": {
+          "container": "w-full h-auto max-h-[80vh] object-contain",
+          "description": "Supports any video format including vertical/story format",
+          "responsive": "Width: 100% of container, Height: auto (maintains original aspect ratio)",
+          "max_height": "80vh to prevent overflow on large desktop screens",
+          "object_contain": "Ensures no distortion - video fits completely within bounds"
+        }
+      },
+      "portfolio_view": {
+        "file": "BlockRenderer.js",
+        "url_videos": {
+          "container": "relative bg-black rounded-lg overflow-hidden w-full with maxHeight: '80vh'",
+          "description": "Consistent with editor but with visual containment",
+          "responsive": "aspect-ratio 16/9, max-height 80vh",
+          "mobile": "On mobile viewport, respects viewport height but maintains 16:9 ratio"
+        },
+        "uploaded_videos": {
+          "container": "w-full h-auto max-h-[80vh] object-contain",
+          "description": "Same as editor - preserves original aspect ratio",
+          "responsive": "100% width, auto height, max 80vh",
+          "mobile": "Adapts to mobile width (usually 100vw - padding), maintains aspect"
+        }
+      },
+      "technical_implementation": {
+        "aspect_ratio_css": "Use style={{ aspectRatio: '16 / 9' }} for standard videos",
+        "max_height_constraint": "max-h-[80vh] applies to both editor and portfolio views to prevent giant videos on ultrawide displays",
+        "object_contain": "Applied to uploaded videos to prevent distortion when aspect ratios don't match container",
+        "container_background": "bg-black for video containers to prevent white flash and maintain professional appearance",
+        "responsive_breakpoints": "Mobile: 100% width minus padding. Desktop: same, constrained by max-height"
+      },
+      "vertical_videos_story_format": {
+        "note": "Vertical videos (story format) will display with aspect ratio that matches their original proportions if using object-contain",
+        "behavior": "Will be smaller width on desktop (portrait box centered in container) but won't distort",
+        "recommendation": "If vertical videos should take more width, consider accepting a custom aspectRatio setting in block.settings"
+      }
+    },    "images": [
       {
         "category": "user_avatar",
         "url": "https://images.unsplash.com/photo-1769636930047-4478f12cf430?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA0MTJ8MHwxfHNlYXJjaHwxfHxtYW4lMjBwb3J0cmFpdCUyMHByb2Zlc3Npb25hbCUyMGNyZWF0aXZlfGVufDB8fHx8MTc3NDYwOTcxOXww&ixlib=rb-4.1.0&q=85",

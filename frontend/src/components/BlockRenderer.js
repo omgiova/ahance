@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import ReactPlayer from 'react-player';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -7,6 +8,7 @@ const API = `${BACKEND_URL}/api`;
 
 export default function BlockRenderer({ block }) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [expandedImage, setExpandedImage] = useState(null);
 
   const renderBlock = () => {
     switch (block.type) {
@@ -41,13 +43,15 @@ export default function BlockRenderer({ block }) {
       case 'image':
         if (!block.content.image) return null;
         const imageWidth = block.settings?.width || '100';
+        const fullImageUrl = `${API}/files/${block.content.image}`;
         return (
           <div className="flex justify-center">
             <div style={{ width: `${imageWidth}%` }}>
               <img
-                src={`${API}/files/${block.content.image}`}
+                src={fullImageUrl}
                 alt={block.content.filename || 'Project image'}
                 className="w-full h-auto"
+                onClick={() => setExpandedImage(fullImageUrl)}
               />
             </div>
           </div>
@@ -61,55 +65,91 @@ export default function BlockRenderer({ block }) {
             className="grid gap-4"
             style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
           >
-            {block.content.images.map((image, index) => (
-              <div key={index} className="overflow-hidden">
-                <img
-                  src={`${API}/files/${image}`}
-                  alt={`Grid image ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
+            {block.content.images.map((image, index) => {
+              const gridImgUrl = `${API}/files/${image}`;
+              return (
+                <div key={index} className="overflow-hidden">
+                  <img
+                    src={gridImgUrl}
+                    alt={`Grid image ${index + 1}`}
+                    className="w-full h-full object-cover"
+                    onClick={() => setExpandedImage(gridImgUrl)}
+                  />
+                </div>
+              );
+            })}
           </div>
         );
 
       case 'carousel':
-        if (!block.content.images || block.content.images.length === 0) return null;
-        const images = block.content.images;
+        const carouselItems = block.content.items || (block.content.images || []).map(img => ({ type: 'image', url: img }));
+        if (carouselItems.length === 0) return null;
         
+        const renderCarouselItem = (item, index) => {
+          const fullUrl = item.sourceType === 'url' ? item.url : `${API}/files/${item.url}`;
+
+          if (item.type === 'video') {
+            return (
+              <div className="w-full h-full flex items-center justify-center">
+                {item.sourceType === 'url' ? (
+                  <div className="w-full h-full">
+                    <ReactPlayer 
+                      url={fullUrl} 
+                      width="100%" 
+                      height="100%" 
+                      controls 
+                    />
+                  </div>
+                ) : (
+                  <video 
+                    src={fullUrl} 
+                    controls 
+                    className="max-w-full max-h-full object-contain"
+                  />
+                )}
+              </div>
+            );
+          }
+
+          return (
+            <img
+              src={fullUrl}
+              alt={`Slide ${index + 1}`}
+              className="max-w-full max-h-full object-contain"
+              onClick={() => setExpandedImage(fullUrl)}
+            />
+          );
+        };
+
         return (
-          <div className="relative">
-            <div className="relative aspect-[16/9] bg-black/5 overflow-hidden">
-              <img
-                src={`${API}/files/${images[currentIndex]}`}
-                alt={`Slide ${currentIndex + 1}`}
-                className="w-full h-full object-contain"
-              />
+          <div className="relative w-full flex flex-col items-center">
+            <div className="relative w-full bg-transparent overflow-hidden flex items-center justify-center" style={{ height: '700px', maxHeight: 'calc(100vh - 100px)' }}>
+              {renderCarouselItem(carouselItems[currentIndex], currentIndex)}
               
-              {images.length > 1 && (
+              {carouselItems.length > 1 && (
                 <>
                   <button
-                    onClick={() => setCurrentIndex((prev) => (prev - 1 + images.length) % images.length)}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-3 transition-all"
+                    onClick={() => setCurrentIndex((prev) => (prev - 1 + carouselItems.length) % carouselItems.length)}
+                    className="absolute left-6 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-black rounded-full p-4 transition-all z-20 shadow-xl"
                   >
-                    <ChevronLeft className="w-6 h-6 text-black" />
+                    <ChevronLeft className="w-6 h-6" />
                   </button>
                   <button
-                    onClick={() => setCurrentIndex((prev) => (prev + 1) % images.length)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-3 transition-all"
+                    onClick={() => setCurrentIndex((prev) => (prev + 1) % carouselItems.length)}
+                    className="absolute right-6 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-black rounded-full p-4 transition-all z-20 shadow-xl"
                   >
-                    <ChevronRight className="w-6 h-6 text-black" />
+                    <ChevronRight className="w-6 h-6" />
                   </button>
 
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                    {images.map((_, index) => (
+                  <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2.5 z-20">
+                    {carouselItems.map((_, index) => (
                       <button
                         key={index}
                         onClick={() => setCurrentIndex(index)}
-                        className={`w-2 h-2 rounded-full transition-all ${
+                        className={`h-2 rounded-full transition-all duration-300 ${
                           index === currentIndex
-                            ? 'bg-[#e38e4d] w-8'
-                            : 'bg-black/30 hover:bg-black/50'
+                            ? 'bg-[#e38e4d] w-10 shadow-[0_0_10px_rgba(227,142,77,0.5)]'
+                            : 'bg-black/30 hover:bg-black/50 w-2'
                         }`}
                       />
                     ))}
@@ -128,20 +168,29 @@ export default function BlockRenderer({ block }) {
         if (!videoSrc) return null;
 
         return (
-          <div className="relative bg-black">
+          <div className="relative w-full flex items-center justify-center">
             {block.content.type === 'url' ? (
-              <ReactPlayer
-                url={videoSrc}
-                controls
-                width="100%"
-                height="auto"
-                style={{ aspectRatio: '16/9' }}
-              />
+              <div className="w-full" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+                <ReactPlayer
+                  url={videoSrc}
+                  controls
+                  width="100%"
+                  height="100%"
+                  config={{
+                    youtube: {
+                      playerVars: { showinfo: 1 }
+                    },
+                    vimeo: {
+                      playerOptions: { responsive: true }
+                    }
+                  }}
+                />
+              </div>
             ) : (
               <video
                 src={videoSrc}
                 controls
-                className="w-full h-auto"
+                style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 200px)', width: 'auto', height: 'auto' }}
               />
             )}
           </div>
@@ -185,5 +234,34 @@ export default function BlockRenderer({ block }) {
     }
   };
 
-  return <div className="w-full">{renderBlock()}</div>;
+  return (
+    <div className="w-full">
+      {renderBlock()}
+
+      {/* Lightbox Overlay */}
+      {expandedImage && createPortal(
+        <div 
+          className="fixed inset-0 z-[999999] bg-black/40 backdrop-blur-2xl flex items-center justify-center p-4 animate-in fade-in duration-300"
+          onClick={() => setExpandedImage(null)}
+        >
+          <button 
+            className="absolute top-8 right-8 bg-[#F6DFCF] text-zinc-400 hover:scale-110 active:scale-95 transition-all p-3 rounded-full shadow-2xl z-[1000000] flex items-center justify-center"
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpandedImage(null);
+            }}
+          >
+            <X className="w-8 h-8 stroke-[1px]" />
+          </button>
+          <img 
+            src={expandedImage} 
+            alt="Expanded view" 
+            className="max-w-[95%] max-h-[95%] object-contain shadow-[0_0_50px_rgba(0,0,0,0.3)] animate-in zoom-in-95 duration-500"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>,
+        document.body
+      )}
+    </div>
+  );
 }

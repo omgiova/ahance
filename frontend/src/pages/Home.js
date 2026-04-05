@@ -30,10 +30,25 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-50 relative">
-      {/* Background glow */}
-      <div className="fixed top-[-10%] left-[-10%] w-[600px] h-[600px] bg-amber-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="fixed bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-amber-600/5 rounded-full blur-[100px] pointer-events-none" />
+    <div className="min-h-screen bg-zinc-950 text-zinc-50 relative overflow-x-hidden">
+      {/* Background Decor Layer */}
+      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+        {/* Set 1 */}
+        <div className="absolute top-[10vh] -left-[10vw] w-[500px] h-[500px] border-2 border-[#e38e4d]/20 rounded-full" />
+        <div className="absolute top-[30vh] right-[10vw] w-[200px] h-[200px] border border-[#e38e4d]/30 rounded-full" />
+        
+        {/* Set 2 */}
+        <div className="absolute top-[110vh] left-[20vw] w-[400px] h-[400px] border-2 border-[#e38e4d]/10 rounded-full" />
+        <div className="absolute top-[140vh] -right-[5vw] w-[300px] h-[300px] border border-[#e38e4d]/20 rounded-full" />
+
+        {/* Set 3 */}
+        <div className="absolute top-[210vh] right-[15vw] w-[500px] h-[500px] border-2 border-[#e38e4d]/15 rounded-full" />
+        <div className="absolute top-[240vh] left-[5vw] w-[150px] h-[150px] border border-[#e38e4d]/40 rounded-full" />
+
+        {/* Glows */}
+        <div className="fixed top-[-10%] left-[-10%] w-[600px] h-[600px] bg-amber-500/10 rounded-full blur-[120px]" />
+        <div className="fixed bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-amber-600/5 rounded-full blur-[100px]" />
+      </div>
 
       {/* Header */}
       <motion.header

@@ -108,19 +108,29 @@ export default function VideoBlock({ block, updateBlock }) {
         </>
       ) : (
         <div className="space-y-3">
-          <div className="relative rounded-2xl overflow-hidden bg-black">
+          <div className="relative w-full flex items-center justify-center bg-black/10 rounded-lg p-4">
             {block.content.type === 'url' ? (
-              <ReactPlayer
-                url={videoSrc}
-                controls
-                width="100%"
-                height="400px"
-              />
+              <div className="w-full" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+                <ReactPlayer
+                  url={videoSrc}
+                  controls
+                  width="100%"
+                  height="100%"
+                  config={{
+                    youtube: {
+                      playerVars: { showinfo: 1 }
+                    },
+                    vimeo: {
+                      playerOptions: { responsive: true }
+                    }
+                  }}
+                />
+              </div>
             ) : (
               <video
                 src={videoSrc}
                 controls
-                className="w-full h-auto"
+                style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 200px)', width: 'auto', height: 'auto' }}
               />
             )}
           </div>

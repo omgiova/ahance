@@ -1,34 +1,35 @@
-from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException, Header, Query
+from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException, Header, Query, Depends
 from fastapi.responses import Response
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
-import requests
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Any, Dict
 import uuid
 from datetime import datetime, timezone
-
+from sqlalchemy.orm import Session
+from models import ProjectModel, FileModel, TagModel, get_db, engine
+from models import Base
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# Create tables
+Base.metadata.create_all(bind=engine)
 
-# Object Storage configuration
-STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
-EMERGENT_KEY = os.environ.get("EMERGENT_LLM_KEY")
+# Local Storage configuration
 APP_NAME = "behance-portfolio"
-storage_key = None
+UPLOADS_DIR = ROOT_DIR / "uploads"
+UPLOADS_DIR.mkdir(exist_ok=True)
 
 # Create the main app without a prefix
 app = FastAPI()
+
+# Mount static file serving for uploads
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
@@ -41,46 +42,57 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# Object Storage functions
-def init_storage():
-    """Initialize storage and get session key"""
-    global storage_key
-    if storage_key:
-        return storage_key
+# Local file storage functions
+def put_object(path: str, data: bytes, content_type: str) -> dict:
+    """Upload file to local storage"""
     try:
-        resp = requests.post(f"{STORAGE_URL}/init", json={"emergent_key": EMERGENT_KEY}, timeout=30)
-        resp.raise_for_status()
-        storage_key = resp.json()["storage_key"]
-        logger.info("Storage initialized successfully")
-        return storage_key
+        # Create full file path
+        full_path = UPLOADS_DIR / path
+        full_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Write file
+        with open(full_path, "wb") as f:
+            f.write(data)
+        
+        logger.info(f"File uploaded: {path}")
+        return {"path": path, "size": len(data)}
     except Exception as e:
-        logger.error(f"Storage init failed: {e}")
+        logger.error(f"Upload failed: {e}")
         raise
 
 
-def put_object(path: str, data: bytes, content_type: str) -> dict:
-    """Upload file to storage"""
-    key = init_storage()
-    resp = requests.put(
-        f"{STORAGE_URL}/objects/{path}",
-        headers={"X-Storage-Key": key, "Content-Type": content_type},
-        data=data,
-        timeout=120
-    )
-    resp.raise_for_status()
-    return resp.json()
-
-
 def get_object(path: str) -> tuple:
-    """Download file from storage"""
-    key = init_storage()
-    resp = requests.get(
-        f"{STORAGE_URL}/objects/{path}",
-        headers={"X-Storage-Key": key},
-        timeout=60
-    )
-    resp.raise_for_status()
-    return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
+    """Download file from local storage"""
+    try:
+        full_path = UPLOADS_DIR / path
+        
+        if not full_path.exists():
+            raise FileNotFoundError(f"File not found: {path}")
+        
+        with open(full_path, "rb") as f:
+            data = f.read()
+        
+        # Simple content type detection
+        if path.endswith(('.jpg', '.jpeg')):
+            content_type = "image/jpeg"
+        elif path.endswith('.png'):
+            content_type = "image/png"
+        elif path.endswith('.webp'):
+            content_type = "image/webp"
+        elif path.endswith('.gif'):
+            content_type = "image/gif"
+        elif path.endswith('.mp4'):
+            content_type = "video/mp4"
+        elif path.endswith('.webm'):
+            content_type = "video/webm"
+        else:
+            content_type = "application/octet-stream"
+        
+        logger.info(f"File downloaded: {path}")
+        return data, content_type
+    except Exception as e:
+        logger.error(f"Download failed: {e}")
+        raise
 
 
 # Models
@@ -105,6 +117,7 @@ class Project(BaseModel):
     visibility: str = "public"
     published: bool = False
     blocks: List[Dict[str, Any]] = []  # List of content blocks
+    position: int = 0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -119,6 +132,7 @@ class ProjectCreate(BaseModel):
     published: bool = False
     blocks: List[Dict[str, Any]] = []
     cover_image: Optional[str] = None
+    position: int = 0
 
 
 class ProjectUpdate(BaseModel):
@@ -126,11 +140,33 @@ class ProjectUpdate(BaseModel):
     description: Optional[str] = None
     cover_image: Optional[str] = None
     category: Optional[str] = None
-    tags: Optional[List[Any]] = None  # Pode ser string (legado) ou objeto com name, bgColor, textColor
+    tags: Optional[List[Any]] = None
     tools: Optional[List[str]] = None
     visibility: Optional[str] = None
     published: Optional[bool] = None
     blocks: Optional[List[Dict[str, Any]]] = None
+    position: Optional[int] = None
+
+
+class ProjectReorder(BaseModel):
+    project_ids: List[str]
+
+
+@api_router.put("/projects/reorder")
+async def reorder_projects(reorder_data: ProjectReorder, db: Session = Depends(get_db)):
+    """Reorder projects by updating their positions"""
+    try:
+        for index, project_id in enumerate(reorder_data.project_ids):
+            project = db.query(ProjectModel).filter(ProjectModel.id == project_id).first()
+            if project:
+                project.position = index
+                project.updated_at = datetime.now(timezone.utc)
+        
+        db.commit()
+        return {"message": "Projects reordered successfully"}
+    except Exception as e:
+        logger.error(f"Reorder projects failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 class FileUploadResponse(BaseModel):
@@ -149,7 +185,7 @@ async def root():
 
 
 @api_router.post("/upload", response_model=FileUploadResponse)
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
     """Upload image or video file"""
     try:
         content_type = file.content_type or "application/octet-stream"
@@ -168,24 +204,24 @@ async def upload_file(file: UploadFile = File(...)):
         data = await file.read()
         result = put_object(path, data, content_type)
         
-        file_doc = {
-            "id": file_id,
-            "storage_path": result["path"],
-            "original_filename": file.filename,
-            "content_type": content_type,
-            "size": result["size"],
-            "is_deleted": False,
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        await db.files.insert_one(file_doc)
-        
-        return FileUploadResponse(
+        db_file = FileModel(
             id=file_id,
             storage_path=result["path"],
             original_filename=file.filename,
             content_type=content_type,
             size=result["size"],
-            download_url=f"/api/files/{result['path']}"
+            is_deleted=False
+        )
+        db.add(db_file)
+        db.commit()
+        
+        return FileUploadResponse(
+            id=file_id,
+            storage_path=f"{APP_NAME}/uploads/{file_id}.{ext}",
+            original_filename=file.filename,
+            content_type=content_type,
+            size=result["size"],
+            download_url=f"/api/files/{path}"
         )
     except HTTPException:
         raise
@@ -195,15 +231,37 @@ async def upload_file(file: UploadFile = File(...)):
 
 
 @api_router.get("/files/{path:path}")
-async def download_file(path: str):
-    """Download file from storage"""
+async def download_file(path: str, db: Session = Depends(get_db)):
+    """Download file from local storage"""
     try:
-        record = await db.files.find_one({"storage_path": path, "is_deleted": False}, {"_id": 0})
-        if not record:
+        full_path = UPLOADS_DIR / path
+        
+        if not full_path.exists():
             raise HTTPException(status_code=404, detail="File not found")
         
-        data, content_type = get_object(path)
-        return Response(content=data, media_type=record.get("content_type", content_type))
+        # Simple content type detection
+        if path.endswith(('.jpg', '.jpeg')):
+            content_type = "image/jpeg"
+        elif path.endswith('.png'):
+            content_type = "image/png"
+        elif path.endswith('.webp'):
+            content_type = "image/webp"
+        elif path.endswith('.gif'):
+            content_type = "image/gif"
+        elif path.endswith('.mp4'):
+            content_type = "video/mp4"
+        elif path.endswith('.webm'):
+            content_type = "video/webm"
+        else:
+            content_type = "application/octet-stream"
+        
+        with open(full_path, "rb") as f:
+            data = f.read()
+        
+        logger.info(f"File downloaded: {path}")
+        return Response(content=data, media_type=content_type)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="File not found")
     except HTTPException:
         raise
     except Exception as e:
@@ -212,69 +270,93 @@ async def download_file(path: str):
 
 
 @api_router.post("/projects", response_model=Project)
-async def create_project(project_data: ProjectCreate):
+async def create_project(project_data: ProjectCreate, db: Session = Depends(get_db)):
     """Create a new project"""
     try:
         project_dict = project_data.model_dump()
-        project = Project(**project_dict)
+        project_dict['id'] = str(uuid.uuid4())
         
-        doc = project.model_dump()
-        doc['created_at'] = doc['created_at'].isoformat()
-        doc['updated_at'] = doc['updated_at'].isoformat()
+        db_project = ProjectModel(**project_dict)
+        db.add(db_project)
+        db.commit()
+        db.refresh(db_project)
         
-        await db.projects.insert_one(doc)
-        
-        # Return without _id
-        return_doc = await db.projects.find_one({"id": project.id}, {"_id": 0})
-        if isinstance(return_doc.get('created_at'), str):
-            return_doc['created_at'] = datetime.fromisoformat(return_doc['created_at'])
-        if isinstance(return_doc.get('updated_at'), str):
-            return_doc['updated_at'] = datetime.fromisoformat(return_doc['updated_at'])
-        
-        return return_doc
+        return Project(**{
+            'id': db_project.id,
+            'title': db_project.title,
+            'description': db_project.description,
+            'category': db_project.category,
+            'tags': db_project.tags or [],
+            'tools': db_project.tools or [],
+            'visibility': db_project.visibility,
+            'published': db_project.published,
+            'blocks': db_project.blocks or [],
+            'cover_image': db_project.cover_image,
+            'position': db_project.position,
+            'created_at': db_project.created_at,
+            'updated_at': db_project.updated_at
+        })
     except Exception as e:
         logger.error(f"Create project failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @api_router.get("/projects", response_model=List[Project])
-async def get_projects(category: Optional[str] = None, tag: Optional[str] = None):
+async def get_projects(category: Optional[str] = None, tag: Optional[str] = None, db: Session = Depends(get_db)):
     """Get all projects with optional filters"""
     try:
-        query = {}
+        query = db.query(ProjectModel)
+        
         if category:
-            query["category"] = category
+            query = query.filter(ProjectModel.category == category)
         if tag:
-            query["tags"] = tag
+            query = query.filter(ProjectModel.tags.contains(tag))
         
-        projects = await db.projects.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+        projects = query.order_by(ProjectModel.position.asc(), ProjectModel.created_at.desc()).all()
         
-        for project in projects:
-            if isinstance(project.get('created_at'), str):
-                project['created_at'] = datetime.fromisoformat(project['created_at'])
-            if isinstance(project.get('updated_at'), str):
-                project['updated_at'] = datetime.fromisoformat(project['updated_at'])
-        
-        return projects
+        return [Project(**{
+            'id': p.id,
+            'title': p.title,
+            'description': p.description,
+            'category': p.category,
+            'tags': p.tags or [],
+            'tools': p.tools or [],
+            'visibility': p.visibility,
+            'published': p.published,
+            'blocks': p.blocks or [],
+            'cover_image': p.cover_image,
+            'position': p.position,
+            'created_at': p.created_at,
+            'updated_at': p.updated_at
+        }) for p in projects]
     except Exception as e:
         logger.error(f"Get projects failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @api_router.get("/projects/{project_id}", response_model=Project)
-async def get_project(project_id: str):
+async def get_project(project_id: str, db: Session = Depends(get_db)):
     """Get a single project by ID"""
     try:
-        project = await db.projects.find_one({"id": project_id}, {"_id": 0})
+        project = db.query(ProjectModel).filter(ProjectModel.id == project_id).first()
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
         
-        if isinstance(project.get('created_at'), str):
-            project['created_at'] = datetime.fromisoformat(project['created_at'])
-        if isinstance(project.get('updated_at'), str):
-            project['updated_at'] = datetime.fromisoformat(project['updated_at'])
-        
-        return project
+        return Project(**{
+            'id': project.id,
+            'title': project.title,
+            'description': project.description,
+            'category': project.category,
+            'tags': project.tags or [],
+            'tools': project.tools or [],
+            'visibility': project.visibility,
+            'published': project.published,
+            'blocks': project.blocks or [],
+            'cover_image': project.cover_image,
+            'position': project.position,
+            'created_at': project.created_at,
+            'updated_at': project.updated_at
+        })
     except HTTPException:
         raise
     except Exception as e:
@@ -283,26 +365,37 @@ async def get_project(project_id: str):
 
 
 @api_router.put("/projects/{project_id}", response_model=Project)
-async def update_project(project_id: str, update_data: ProjectUpdate):
+async def update_project(project_id: str, update_data: ProjectUpdate, db: Session = Depends(get_db)):
     """Update a project"""
     try:
-        existing = await db.projects.find_one({"id": project_id}, {"_id": 0})
-        if not existing:
+        project = db.query(ProjectModel).filter(ProjectModel.id == project_id).first()
+        if not project:
             raise HTTPException(status_code=404, detail="Project not found")
         
         update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
-        update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+        update_dict["updated_at"] = datetime.now(timezone.utc)
         
-        await db.projects.update_one({"id": project_id}, {"$set": update_dict})
+        for key, value in update_dict.items():
+            setattr(project, key, value)
         
-        updated = await db.projects.find_one({"id": project_id}, {"_id": 0})
+        db.commit()
+        db.refresh(project)
         
-        if isinstance(updated.get('created_at'), str):
-            updated['created_at'] = datetime.fromisoformat(updated['created_at'])
-        if isinstance(updated.get('updated_at'), str):
-            updated['updated_at'] = datetime.fromisoformat(updated['updated_at'])
-        
-        return updated
+        return Project(**{
+            'id': project.id,
+            'title': project.title,
+            'description': project.description,
+            'category': project.category,
+            'tags': project.tags or [],
+            'tools': project.tools or [],
+            'visibility': project.visibility,
+            'published': project.published,
+            'blocks': project.blocks or [],
+            'cover_image': project.cover_image,
+            'position': project.position,
+            'created_at': project.created_at,
+            'updated_at': project.updated_at
+        })
     except HTTPException:
         raise
     except Exception as e:
@@ -311,12 +404,15 @@ async def update_project(project_id: str, update_data: ProjectUpdate):
 
 
 @api_router.delete("/projects/{project_id}")
-async def delete_project(project_id: str):
+async def delete_project(project_id: str, db: Session = Depends(get_db)):
     """Delete a project"""
     try:
-        result = await db.projects.delete_one({"id": project_id})
-        if result.deleted_count == 0:
+        project = db.query(ProjectModel).filter(ProjectModel.id == project_id).first()
+        if not project:
             raise HTTPException(status_code=404, detail="Project not found")
+        
+        db.delete(project)
+        db.commit()
         return {"message": "Project deleted successfully"}
     except HTTPException:
         raise
@@ -327,38 +423,37 @@ async def delete_project(project_id: str):
 
 # Tags endpoints
 @api_router.get("/tags")
-async def get_all_tags():
+async def get_all_tags(db: Session = Depends(get_db)):
     """Get all global tags"""
     try:
-        tags = await db.tags.find({}, {"_id": 0}).to_list(1000)
-        return tags
+        tags = db.query(TagModel).all()
+        return [{"id": t.id, "name": t.name, "bgColor": t.bg_color, "textColor": t.text_color} for t in tags]
     except Exception as e:
         logger.error(f"Get tags failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @api_router.post("/tags")
-async def create_tag(tag: dict):
+async def create_tag(tag: dict, db: Session = Depends(get_db)):
     """Create a new global tag"""
     try:
         # Check if tag name already exists
-        existing = await db.tags.find_one({"name": tag["name"]})
+        existing = db.query(TagModel).filter(TagModel.name == tag["name"]).first()
         if existing:
             raise HTTPException(status_code=400, detail="Tag already exists")
         
-        tag_doc = {
-            "id": str(uuid.uuid4()),
-            "name": tag["name"],
-            "textColor": tag.get("textColor", "#000000"),
-            "bgColor": tag.get("bgColor", "#ffffff"),
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
+        tag_doc = TagModel(
+            id=str(uuid.uuid4()),
+            name=tag["name"],
+            text_color=tag.get("textColor", "#000000"),
+            bg_color=tag.get("bgColor", "#ffffff")
+        )
         
-        await db.tags.insert_one(tag_doc)
+        db.add(tag_doc)
+        db.commit()
+        db.refresh(tag_doc)
         
-        # Return without _id
-        return_doc = await db.tags.find_one({"id": tag_doc["id"]}, {"_id": 0})
-        return return_doc
+        return {"id": tag_doc.id, "name": tag_doc.name, "textColor": tag_doc.text_color, "bgColor": tag_doc.bg_color}
     except HTTPException:
         raise
     except Exception as e:
@@ -367,18 +462,15 @@ async def create_tag(tag: dict):
 
 
 @api_router.delete("/tags/{tag_id}")
-async def delete_tag(tag_id: str):
+async def delete_tag(tag_id: str, db: Session = Depends(get_db)):
     """Delete a global tag"""
     try:
-        result = await db.tags.delete_one({"id": tag_id})
-        if result.deleted_count == 0:
+        tag = db.query(TagModel).filter(TagModel.id == tag_id).first()
+        if not tag:
             raise HTTPException(status_code=404, detail="Tag not found")
         
-        # Remove tag from all projects that have it
-        await db.projects.update_many(
-            {"tags.id": tag_id},
-            {"$pull": {"tags": {"id": tag_id}}}
-        )
+        db.delete(tag)
+        db.commit()
         
         return {"message": "Tag deleted successfully"}
     except HTTPException:
@@ -389,11 +481,11 @@ async def delete_tag(tag_id: str):
 
 
 @api_router.put("/tags/{tag_id}")
-async def update_tag(tag_id: str, tag_update: dict):
+async def update_tag(tag_id: str, tag_update: dict, db: Session = Depends(get_db)):
     """Update a global tag - changes propagate to all projects"""
     try:
-        existing = await db.tags.find_one({"id": tag_id})
-        if not existing:
+        tag = db.query(TagModel).filter(TagModel.id == tag_id).first()
+        if not tag:
             raise HTTPException(status_code=404, detail="Tag not found")
         
         # Build update dict
@@ -401,34 +493,35 @@ async def update_tag(tag_id: str, tag_update: dict):
         if "name" in tag_update:
             update_dict["name"] = tag_update["name"]
         if "textColor" in tag_update:
-            update_dict["textColor"] = tag_update["textColor"]
+            update_dict["text_color"] = tag_update["textColor"]
         if "bgColor" in tag_update:
-            update_dict["bgColor"] = tag_update["bgColor"]
+            update_dict["bg_color"] = tag_update["bgColor"]
         
         if not update_dict:
             raise HTTPException(status_code=400, detail="No fields to update")
         
         # Update the tag itself
-        await db.tags.update_one({"id": tag_id}, {"$set": update_dict})
-        
-        # Update tag in all projects that have it
-        # This updates the embedded tag data in all projects
         for key, value in update_dict.items():
-            await db.projects.update_many(
-                {"tags.id": tag_id},
-                {"$set": {f"tags.$[elem].{key}": value}},
-                array_filters=[{"elem.id": tag_id}]
-            )
+            setattr(tag, key, value)
+        
+        db.commit()
+        db.refresh(tag)
         
         # Return updated tag
-        updated = await db.tags.find_one({"id": tag_id}, {"_id": 0})
+        return {"id": tag.id, "name": tag.name, "textColor": tag.text_color, "bgColor": tag.bg_color}
         return updated
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Update tag failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Root routes
+@app.get("/")
+async def root():
+    """Root endpoint"""
+    return {"message": "Backend is running!", "docs": "/docs"}
 
 
 app.include_router(api_router)
@@ -444,13 +537,9 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup():
-    try:
-        init_storage()
-        logger.info("Storage initialized")
-    except Exception as e:
-        logger.error(f"Storage init failed: {e}")
+    logger.info("Backend started - Local file storage enabled")
 
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    client.close()
+    logger.info("Backend shutting down")
