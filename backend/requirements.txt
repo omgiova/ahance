@@ -1,4 +1,5 @@
-﻿sqlalchemy
+﻿pyscopg2-binary
+sqlalchemy
 python-dotenv
 pydantic
 fastapi
