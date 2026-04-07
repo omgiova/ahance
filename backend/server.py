@@ -526,10 +526,17 @@ async def root():
 
 app.include_router(api_router)
 
+
+# CORS: Permitir o domínio do frontend Netlify/Cloudflare
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=[
+        "https://portfolio.giovaniamorim.com",  # seu domínio frontend
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8000"
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
