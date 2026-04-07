@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import axios from 'axios';
@@ -54,17 +54,10 @@ export default function AddProject() {
   const [blocks, setBlocks] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    if (isEditing) {
-      loadProject();
-    }
-  }, [id]);
-
-  const loadProject = async () => {
+  const loadProject = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/projects/${id}`);
       const project = response.data;
-      
       setTitle(project.title || '');
       setDescription(project.description || '');
       setCategory(project.category || '');
@@ -79,7 +72,13 @@ export default function AddProject() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    if (isEditing) {
+      loadProject();
+    }
+  }, [id, isEditing, loadProject]);
 
   const handlePublish = async (asDraft = false) => {
     if (!title.trim()) {
