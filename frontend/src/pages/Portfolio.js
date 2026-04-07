@@ -30,7 +30,7 @@ export default function Portfolio() {
   const fetchProjects = async () => {
     try {
       const response = await axios.get(`${API}/projects`);
-      setProjects(response.data.filter(p => p.published));
+      setProjects(response.data.filter(p => p.published === true || p.published === "true" || p.published === 1));
     } catch (error) {
       console.error('Error fetching projects:', error);
     } finally {
