@@ -1,4 +1,6 @@
-﻿sqlalchemy
+﻿useEffect(() => {
+  // ...código...
+}, [isEditing, loadProject]);sqlalchemy
 python-dotenv
 pydantic
 fastapi
