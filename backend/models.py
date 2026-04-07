@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 import json
 
 import os
-DATABASE_URL = os.environ.get("postgresql://backend_tuhc_user:GSnJIN2ogX1TWCHZWYy6whsBK8dqt0fm@dpg-d7afs3buibrs739ot97g-a.virginia-postgres.render.com/backend_tuhc")
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
