@@ -46,20 +46,19 @@ export default function Portfolio() {
   };
 
   const handleResumeDownload = (lang) => {
-    window.open(RESUME_LINKS[lang], '_blank');
+    const link = document.createElement('a');
+    link.href = RESUME_LINKS[lang];
+    link.setAttribute('download', '');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     setShowResumeDropdown(false);
-  };
+};
 
   const DECOR_SIZES = [120, 230, 180, 220, 150, 200, 180];
 
   return (
     <div className="min-h-screen bg-[#fffeec] relative overflow-x-hidden">
-      {/* Background Decor Layer - Fixed for Top sections */}
-      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }}>
-        {/* Solid Orange Circle - Positioned far right, centered to Sobre Section */}
-        <div className="absolute top-[150vh] right-[2vw] w-[250px] h-[250px] bg-[#e38e4d] rounded-full" />
-      </div>
-
       {/* Header Navigation */}
       <motion.header
         initial={{ y: -20, opacity: 0 }}
@@ -194,8 +193,47 @@ export default function Portfolio() {
         </div>
       </section>
 
+      {/* Infinite Marquee Section */}
+      <div className="bg-[#fffeec] py-4 overflow-hidden border-y border-black/5 relative z-10">
+        <motion.div 
+          className="flex whitespace-nowrap gap-8"
+          animate={{ x: [0, -1000] }}
+          transition={{ 
+            duration: 10, 
+            repeat: Infinity, 
+            ease: "linear" 
+          }}
+        >
+          {/* Repetir o conjunto de palavras para criar o efeito infinito */}
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-8 text-4xl md:text-5xl italic text-black font-normal" style={{ fontFamily: 'EB Garamond, serif' }}>
+              <span>criatividade</span>
+              <div className="w-3 h-3 bg-[#e38e4d] rounded-full shrink-0" />
+              <span>tecnologia</span>
+              <div className="w-3 h-3 bg-[#e38e4d] rounded-full shrink-0" />
+              <span>redação</span>
+              <div className="w-3 h-3 bg-[#e38e4d] rounded-full shrink-0" />
+              <span>automação</span>
+              <div className="w-3 h-3 bg-[#e38e4d] rounded-full shrink-0" />
+            </div>
+          ))}
+        </motion.div>
+      </div>
+
       {/* About Section */}
-      <section id="sobre" className="max-w-4xl mx-auto px-6 py-20">
+      <section id="sobre" className="relative max-w-4xl mx-auto px-6 py-20">
+        {/* Decorative Circle for About Section */}
+        <div 
+          className="absolute pointer-events-none rounded-full bg-[#e38e4d]"
+          style={{
+            width: '250px',
+            height: '250px',
+            top: '50%',
+            right: '-320px',
+            transform: 'translateY(-50%)',
+            zIndex: 0
+          }}
+        />
         <div className="relative pl-8 border-l-2 border-[#e38e4d]">
           <div className="flex items-center gap-3 mb-8">
             <div className="w-3 h-3 bg-[#e38e4d] rounded-full" />
@@ -249,7 +287,7 @@ export default function Portfolio() {
         </div>
 
         <div className="max-w-4xl mx-auto px-6 relative z-10">
-          <div className="relative pl-8 border-l-2 border-[#e38e4d]">
+          <div className="relative">
             {/* Section Header */}
             <div className="mb-16">
               <div className="flex items-center gap-3 mb-4">
