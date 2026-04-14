@@ -90,7 +90,7 @@ export default function PdfBlock({ block, updateBlock }) {
             </SelectTrigger>
             <SelectContent className="bg-zinc-950/90 backdrop-blur-xl border-white/10 text-zinc-100">
               <SelectItem value="iframe">iframe (navegador nativo)</SelectItem>
-              <SelectItem value="pdfjs">PDF.js (Mozilla)</SelectItem>
+              <SelectItem value="pdfjs">Google Docs Viewer</SelectItem>
             </SelectContent>
           </Select>
         </div>

@@ -13,8 +13,8 @@ const VIDEO_URL = 'https://customer-assets.emergentagent.com/job_behance-style/a
 const LOGO_URL = 'https://customer-assets.emergentagent.com/job_behance-style/artifacts/ccsqrvdt_EB%20Garamond%20%281%29.png';
 
 const RESUME_LINKS = {
-  pt: "https://docs.google.com/document/d/10W7c_UReou8PrBh5mENUmPy4BDIwl1IdAfwX3JszphA/export?format=docx",
-  en: "https://docs.google.com/document/d/1JVeLJEUSNNVly_va0zm2fPLlJCBSMMBCJuwOAO7tqBw/export?format=docx"
+  pt: "https://drive.google.com/uc?export=download&id=1-kzlM4YnCEmWb3NHH0LHNjK0vnhMffJ_",
+  en: "https://drive.google.com/uc?export=download&id=1WjRa7ugBkUKbHrjEsXdMgjyuKpqnnVAl"
 };
 
 export default function Portfolio() {
