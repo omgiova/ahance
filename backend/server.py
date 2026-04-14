@@ -451,10 +451,16 @@ async def get_all_tags(db: Session = Depends(get_db)):
     """Get all global tags"""
     try:
         tags = db.query(TagModel).all()
-        return [{"id": t.id, "name": t.name, "bgColor": t.bg_color, "textColor": t.text_color, "isPinned": bool(t.is_pinned)} for t in tags]
+        return [{"id": t.id, "name": t.name, "bgColor": t.bg_color, "textColor": t.text_color, "isPinned": bool(getattr(t, 'is_pinned', False))} for t in tags]
     except Exception as e:
         logger.error(f"Get tags failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        # Fallback: query without is_pinned in case migration hasn't run yet
+        try:
+            result = db.execute(text("SELECT id, name, bg_color, text_color FROM tags")).fetchall()
+            return [{"id": r[0], "name": r[1], "bgColor": r[2], "textColor": r[3], "isPinned": False} for r in result]
+        except Exception as e2:
+            logger.error(f"Get tags fallback failed: {e2}")
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 @api_router.post("/tags")
