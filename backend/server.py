@@ -80,6 +80,65 @@ def _upload_local(file_id: str, data: bytes, content_type: str, ext: str) -> dic
     return {"public_id": path, "url": f"/api/files/{path}", "size": len(data)}
 
 
+def _get_resource_type_for_content_type(content_type: str) -> str:
+    if content_type.startswith("video/"):
+        return "video"
+    if content_type == "application/pdf":
+        return "raw"
+    return "image"
+
+
+def delete_storage_files(storage_paths: list, db):
+    """Delete files from Cloudinary (or local) and remove from DB"""
+    if not storage_paths:
+        return
+    for path in storage_paths:
+        if not path:
+            continue
+        try:
+            db_file = db.query(FileModel).filter(FileModel.storage_path == path).first()
+            if os.environ.get("CLOUDINARY_CLOUD_NAME"):
+                resource_type = _get_resource_type_for_content_type(db_file.content_type if db_file else "image/jpeg")
+                cloudinary.uploader.destroy(path, resource_type=resource_type)
+                logger.info(f"Cloudinary deleted: {path}")
+            else:
+                full_path = UPLOADS_DIR / path
+                if full_path.exists():
+                    full_path.unlink()
+                    logger.info(f"Local deleted: {path}")
+            if db_file:
+                db.delete(db_file)
+        except Exception as e:
+            logger.warning(f"Could not delete file {path}: {e}")
+    db.commit()
+
+
+def extract_storage_paths_from_blocks(blocks: list) -> set:
+    """Extract all storage_path values referenced in project blocks"""
+    paths = set()
+    for block in (blocks or []):
+        c = block.get("content", {})
+        # image block
+        if c.get("image"):
+            paths.add(c["image"])
+        # video block (upload)
+        if c.get("video") and block.get("content", {}).get("type") == "upload":
+            paths.add(c["video"])
+        # carousel / grid items
+        for item in c.get("items", []) + c.get("images", []):
+            if isinstance(item, str):
+                paths.add(item)
+            elif isinstance(item, dict) and item.get("sourceType") == "upload" and item.get("url"):
+                paths.add(item["url"])
+        # pdf block
+        if c.get("pdf"):
+            paths.add(c["pdf"])
+        # cover image stored in block (legacy)
+        if c.get("cover_image"):
+            paths.add(c["cover_image"])
+    return paths
+
+
 def upload_file_storage(file_id: str, data: bytes, content_type: str, ext: str) -> dict:
     """Upload para Cloudinary se configurado, senão salva localmente"""
     if os.environ.get("CLOUDINARY_CLOUD_NAME"):
@@ -394,15 +453,32 @@ async def update_project(project_id: str, update_data: ProjectUpdate, db: Sessio
         project = db.query(ProjectModel).filter(ProjectModel.id == project_id).first()
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
-        
+
+        # Detect removed files before applying update
+        old_paths = extract_storage_paths_from_blocks(project.blocks or [])
+        if project.cover_image:
+            old_paths.add(project.cover_image)
+        if project.client_logo and not project.client_logo.startswith('http'):
+            old_paths.add(project.client_logo)
+
         update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
         update_dict["updated_at"] = datetime.now(timezone.utc)
-        
+
         for key, value in update_dict.items():
             setattr(project, key, value)
-        
+
         db.commit()
         db.refresh(project)
+
+        # Delete files no longer referenced
+        new_paths = extract_storage_paths_from_blocks(project.blocks or [])
+        if project.cover_image:
+            new_paths.add(project.cover_image)
+        if project.client_logo and not project.client_logo.startswith('http'):
+            new_paths.add(project.client_logo)
+        orphaned = old_paths - new_paths
+        if orphaned:
+            delete_storage_files(list(orphaned), db)
         
         return Project(**{
             'id': project.id,
@@ -434,9 +510,21 @@ async def delete_project(project_id: str, db: Session = Depends(get_db)):
         project = db.query(ProjectModel).filter(ProjectModel.id == project_id).first()
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
-        
+
+        # Collect all file references before deleting
+        all_paths = extract_storage_paths_from_blocks(project.blocks or [])
+        if project.cover_image:
+            all_paths.add(project.cover_image)
+        if project.client_logo and not project.client_logo.startswith('http'):
+            all_paths.add(project.client_logo)
+
         db.delete(project)
         db.commit()
+
+        # Clean up storage after project is deleted
+        if all_paths:
+            delete_storage_files(list(all_paths), db)
+
         return {"message": "Project deleted successfully"}
     except HTTPException:
         raise

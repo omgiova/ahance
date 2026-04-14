@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Upload, X, ChevronLeft, ChevronRight, Link as LinkIcon } from 'lucide-react';
+import { Upload, X, ChevronLeft, ChevronRight, Link as LinkIcon, GripVertical, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import axios from 'axios';
@@ -14,6 +14,7 @@ export default function CarouselBlock({ block, updateBlock }) {
   const [uploading, setUploading] = useState(false);
   const [videoUrl, setVideoUrl] = useState('');
   const [showUrlInput, setShowUrlInput] = useState(false);
+  const [dragSrcIndex, setDragSrcIndex] = useState(null);
   const fileInputRef = useRef(null);
 
   const parseGoogleDriveUrl = (raw) => {
@@ -120,6 +121,38 @@ export default function CarouselBlock({ block, updateBlock }) {
     updateBlock(block.id, { content: { ...block.content, items: newItems } });
   };
 
+  const moveItem = (fromIndex, toIndex) => {
+    if (toIndex < 0 || toIndex >= items.length) return;
+    const newItems = [...items];
+    const [moved] = newItems.splice(fromIndex, 1);
+    newItems.splice(toIndex, 0, moved);
+    updateBlock(block.id, { content: { ...block.content, items: newItems } });
+    setCurrentIndex(toIndex);
+  };
+
+  const handleThumbnailDragStart = (e, index) => {
+    setDragSrcIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleThumbnailDrop = (e, toIndex) => {
+    e.preventDefault();
+    if (dragSrcIndex === null || dragSrcIndex === toIndex) { setDragSrcIndex(null); return; }
+    const newItems = [...items];
+    const [moved] = newItems.splice(dragSrcIndex, 1);
+    newItems.splice(toIndex, 0, moved);
+    updateBlock(block.id, { content: { ...block.content, items: newItems } });
+    setCurrentIndex(toIndex);
+    setDragSrcIndex(null);
+  };
+
+  const getThumbnailUrl = (item) => {
+    if (item.type === 'image' && item.url) {
+      return item.sourceType === 'url' ? item.url : `${API}/files/${item.url}`;
+    }
+    return null;
+  };
+
   const renderCurrentItem = () => {
     const item = items[currentIndex];
     if (!item) return null;
@@ -211,6 +244,7 @@ export default function CarouselBlock({ block, updateBlock }) {
       )}
 
       {items.length > 0 ? (
+        <>
         <div className="relative rounded-2xl overflow-hidden bg-black/20 group">
           <div className="relative h-[600px] flex items-center justify-center">
             {renderCurrentItem()}
@@ -220,6 +254,28 @@ export default function CarouselBlock({ block, updateBlock }) {
             >
               <X className="w-4 h-4" />
             </button>
+
+            {/* Move left/right buttons */}
+            {items.length > 1 && (
+              <>
+                <button
+                  onClick={() => moveItem(currentIndex, currentIndex - 1)}
+                  disabled={currentIndex === 0}
+                  className="absolute top-4 left-14 bg-white/20 hover:bg-white/40 disabled:opacity-20 text-white rounded-full p-1.5 transition-colors opacity-0 group-hover:opacity-100 z-10"
+                  title="Mover para esquerda"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => moveItem(currentIndex, currentIndex + 1)}
+                  disabled={currentIndex === items.length - 1}
+                  className="absolute top-4 left-4 bg-white/20 hover:bg-white/40 disabled:opacity-20 text-white rounded-full p-1.5 transition-colors opacity-0 group-hover:opacity-100 z-10"
+                  title="Mover para direita"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </>
+            )}
           </div>
 
           {items[currentIndex]?.type === 'gdrive' && (
@@ -256,22 +312,47 @@ export default function CarouselBlock({ block, updateBlock }) {
                 <ChevronRight className="w-6 h-6 text-white" />
               </button>
 
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2.5">
-                {items.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentIndex(index)}
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      index === currentIndex
-                        ? 'bg-amber-500 w-10 shadow-[0_0_10px_rgba(245,158,11,0.5)]'
-                        : 'bg-white/30 hover:bg-white/50 w-2'
-                    }`}
-                  />
-                ))}
-              </div>
             </>
           )}
         </div>
+
+        {/* Thumbnail strip for reordering */}
+        {items.length > 1 && (
+          <div className="flex gap-2 mt-3 flex-wrap">
+            {items.map((item, index) => {
+              const thumbUrl = getThumbnailUrl(item);
+              const isActive = index === currentIndex;
+              const isDragging = dragSrcIndex === index;
+              return (
+                <div
+                  key={index}
+                  draggable
+                  onDragStart={(e) => handleThumbnailDragStart(e, index)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => handleThumbnailDrop(e, index)}
+                  onClick={() => setCurrentIndex(index)}
+                  className={`relative w-14 h-14 rounded-lg overflow-hidden cursor-grab flex-shrink-0 transition-all ${
+                    isActive
+                      ? 'ring-2 ring-amber-500 ring-offset-2 ring-offset-zinc-900'
+                      : 'ring-1 ring-white/10 hover:ring-white/30'
+                  } ${isDragging ? 'opacity-30' : 'opacity-100'}`}
+                >
+                  {thumbUrl ? (
+                    <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                      <Video className="w-5 h-5 text-zinc-400" />
+                    </div>
+                  )}
+                  <span className="absolute bottom-0.5 right-1 text-[10px] text-white/60 leading-none">
+                    {index + 1}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        </>
       ) : (
         <div
           onClick={() => fileInputRef.current?.click()}

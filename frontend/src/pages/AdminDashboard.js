@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Edit, Trash2, Eye, ArrowLeft } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, ArrowLeft, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -15,6 +15,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [draggedId, setDraggedId] = useState(null);
   const [dropIndex, setDropIndex] = useState(null);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     fetchProjects();
@@ -98,8 +99,8 @@ export default function AdminDashboard() {
     setDropIndex(null);
   };
 
-  // Calculate display order while dragging
-  const displayProjects = draggedId !== null && dropIndex !== null 
+  // Calculate display order while dragging, then apply search filter
+  const baseProjects = draggedId !== null && dropIndex !== null 
     ? (() => {
         const temp = projects.filter(p => p.id !== draggedId);
         const draggedProject = projects.find(p => p.id === draggedId);
@@ -112,6 +113,10 @@ export default function AdminDashboard() {
         return temp;
       })()
     : projects;
+
+  const displayProjects = search.trim()
+    ? baseProjects.filter(p => p.title?.toLowerCase().includes(search.trim().toLowerCase()))
+    : baseProjects;
 
   const handleDelete = async (projectId, projectTitle) => {
     if (!window.confirm(`Tem certeza que deseja deletar "${projectTitle}"?`)) {
@@ -175,6 +180,18 @@ export default function AdminDashboard() {
           >
             Total de projetos: {projects.length}
           </p>
+          {/* Search */}
+          <div className="relative mt-4 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/40" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Filtrar por nome..."
+              className="w-full pl-9 pr-4 py-2 text-sm bg-white border border-black/10 rounded-full text-black placeholder:text-black/40 focus:outline-none focus:border-[#e38e4d] transition-colors"
+              style={{ fontFamily: 'EB Garamond, serif' }}
+            />
+          </div>
         </div>
 
         {loading ? (
