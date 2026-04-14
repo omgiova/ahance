@@ -174,9 +174,22 @@ export default function BlockRenderer({ block }) {
         if (!videoSrc) return null;
 
         return (
-          <div className="relative w-full flex items-center justify-center">
-            {block.content.type === 'url' ? (
-              <div className="w-full" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+          <div className="relative w-full bg-transparent overflow-hidden flex items-center justify-center" style={{ height: '700px', maxHeight: 'calc(100vh - 100px)' }}>
+            {block.content.type === 'gdrive' ? (() => {
+              const ratioMap = { landscape: '56.25%', portrait: '177.78%', square: '100%' };
+              const paddingTop = ratioMap[block.content.orientation] || '56.25%';
+              return (
+                <div style={{ position: 'relative', paddingTop, width: block.content.orientation === 'portrait' ? '394px' : '100%', maxWidth: '100%' }}>
+                  <iframe
+                    src={videoSrc}
+                    allow="autoplay; fullscreen; picture-in-picture"
+                    allowFullScreen
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                  />
+                </div>
+              );
+            })() : block.content.type === 'url' ? (
+              <div className="w-full h-full">
                 <ReactPlayer
                   url={videoSrc}
                   controls
@@ -196,7 +209,7 @@ export default function BlockRenderer({ block }) {
               <video
                 src={videoSrc}
                 controls
-                style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 200px)', width: 'auto', height: 'auto' }}
+                className="max-w-full max-h-full object-contain"
               />
             )}
           </div>

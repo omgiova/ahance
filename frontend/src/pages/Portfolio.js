@@ -360,7 +360,7 @@ export default function Portfolio() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-32">
+              <div className="space-y-2">
                 {projects.map((project, index) => (
                   <motion.article
                     key={project.id}

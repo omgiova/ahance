@@ -45,18 +45,45 @@ export default function VideoBlock({ block, updateBlock }) {
     }
   };
 
+  const parseGoogleDriveUrl = (raw) => {
+    try {
+      const u = new URL(raw);
+      if (!u.host.includes('drive.google.com')) return null;
+      // /file/d/{ID}/...
+      const match = u.pathname.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+      if (match) return `https://drive.google.com/file/d/${match[1]}/preview`;
+      // ?id={ID}
+      const id = u.searchParams.get('id');
+      if (id) return `https://drive.google.com/file/d/${id}/preview`;
+    } catch (_) {}
+    return null;
+  };
+
   const handleUrlSubmit = () => {
     if (url.trim()) {
-      updateBlock(block.id, {
-        content: {
-          ...block.content,
-          url: url.trim(),
-          type: 'url'
-        }
-      });
-      toast.success('URL do vídeo adicionada!');
+      const gdriveEmbed = parseGoogleDriveUrl(url.trim());
+      if (gdriveEmbed) {
+        updateBlock(block.id, {
+          content: { ...block.content, url: gdriveEmbed, type: 'gdrive', orientation: 'landscape' }
+        });
+        toast.success('Vídeo do Google Drive adicionado!');
+      } else {
+        updateBlock(block.id, {
+          content: { ...block.content, url: url.trim(), type: 'url' }
+        });
+        toast.success('URL do vídeo adicionada!');
+      }
     }
   };
+
+  const ORIENTATIONS = [
+    { value: 'landscape', label: 'Horizontal', ratio: '56.25%' },   // 16:9
+    { value: 'portrait',  label: 'Vertical',   ratio: '177.78%' },  // 9:16
+    { value: 'square',    label: 'Quadrado',   ratio: '100%' },      // 1:1
+  ];
+
+  const currentOrientation = block.content.orientation || 'landscape';
+  const currentRatio = ORIENTATIONS.find(o => o.value === currentOrientation)?.ratio || '56.25%';
 
   const videoSrc = block.content.type === 'upload' && block.content.video
     ? `${API}/files/${block.content.video}`
@@ -89,12 +116,12 @@ export default function VideoBlock({ block, updateBlock }) {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs uppercase tracking-wider text-zinc-400">URL do vídeo (YouTube, Vimeo, etc.)</Label>
+            <Label className="text-xs uppercase tracking-wider text-zinc-400">URL do vídeo (YouTube, Vimeo, Google Drive, etc.)</Label>
             <div className="flex gap-2">
               <Input
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://youtube.com/watch?v=..."
+                placeholder="https://youtube.com/watch?v=... ou link do Google Drive"
                 className="bg-black/20 border-white/10 text-zinc-50 focus-visible:ring-1 focus-visible:ring-amber-500"
               />
               <Button
@@ -109,7 +136,16 @@ export default function VideoBlock({ block, updateBlock }) {
       ) : (
         <div className="space-y-3">
           <div className="relative w-full flex items-center justify-center bg-black/10 rounded-lg p-4">
-            {block.content.type === 'url' ? (
+            {block.content.type === 'gdrive' ? (
+              <div className="w-full" style={{ position: 'relative', paddingTop: currentRatio }}>
+                <iframe
+                  src={videoSrc}
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                />
+              </div>
+            ) : block.content.type === 'url' ? (
               <div className="w-full" style={{ maxHeight: 'calc(100vh - 200px)' }}>
                 <ReactPlayer
                   url={videoSrc}
@@ -117,12 +153,8 @@ export default function VideoBlock({ block, updateBlock }) {
                   width="100%"
                   height="100%"
                   config={{
-                    youtube: {
-                      playerVars: { showinfo: 1 }
-                    },
-                    vimeo: {
-                      playerOptions: { responsive: true }
-                    }
+                    youtube: { playerVars: { showinfo: 1 } },
+                    vimeo: { playerOptions: { responsive: true } }
                   }}
                 />
               </div>
@@ -146,6 +178,24 @@ export default function VideoBlock({ block, updateBlock }) {
             >
               Trocar vídeo
             </Button>
+            {block.content.type === 'gdrive' && (
+              <div className="flex items-center gap-2 ml-auto">
+                <span className="text-xs text-zinc-500">Formato:</span>
+                {ORIENTATIONS.map(o => (
+                  <button
+                    key={o.value}
+                    onClick={() => updateBlock(block.id, { content: { ...block.content, orientation: o.value } })}
+                    className={`text-xs px-2 py-1 rounded transition-colors ${
+                      currentOrientation === o.value
+                        ? 'bg-amber-500 text-zinc-950'
+                        : 'text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
