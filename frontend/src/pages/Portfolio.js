@@ -48,20 +48,20 @@ export default function Portfolio() {
   const handleResumeDownload = (lang) => {
     const link = document.createElement('a');
     link.href = RESUME_LINKS[lang];
-
-const getLuminance = (hex) => {
-    const c = hex.replace('#', '');
-    const r = parseInt(c.substring(0, 2), 16) / 255;
-    const g = parseInt(c.substring(2, 4), 16) / 255;
-    const b = parseInt(c.substring(4, 6), 16) / 255;
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  };
     link.setAttribute('download', '');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     setShowResumeDropdown(false);
-};
+  };
+
+  const getLuminance = (hex) => {
+    const c = (hex || '#000000').replace('#', '');
+    const r = parseInt(c.substring(0, 2), 16) / 255;
+    const g = parseInt(c.substring(2, 4), 16) / 255;
+    const b = parseInt(c.substring(4, 6), 16) / 255;
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
 
   const DECOR_SIZES = [120, 230, 180, 220, 150, 200, 180];
 
