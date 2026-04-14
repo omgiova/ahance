@@ -52,18 +52,36 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# Cloudinary upload
-def upload_to_cloudinary(file_id: str, data: bytes, content_type: str) -> dict:
-    """Upload file to Cloudinary"""
-    resource_type = "video" if content_type.startswith("video/") else "image"
-    result = cloudinary.uploader.upload(
-        data,
-        public_id=f"ahance/{file_id}",
-        resource_type=resource_type,
-        overwrite=False
-    )
-    logger.info(f"Cloudinary upload: {result['public_id']}")
-    return {"public_id": result["public_id"], "url": result["secure_url"], "size": len(data)}
+def _upload_local(file_id: str, data: bytes, content_type: str, ext: str) -> dict:
+    """Fallback: salva arquivo em disco local"""
+    path = f"{APP_NAME}/uploads/{file_id}.{ext}"
+    full_path = UPLOADS_DIR / path
+    full_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(full_path, "wb") as f:
+        f.write(data)
+    logger.info(f"Local upload: {path}")
+    return {"public_id": path, "url": f"/api/files/{path}", "size": len(data)}
+
+
+def upload_file_storage(file_id: str, data: bytes, content_type: str, ext: str) -> dict:
+    """Upload para Cloudinary se configurado, senão salva localmente"""
+    if os.environ.get("CLOUDINARY_CLOUD_NAME"):
+        if content_type.startswith("video/"):
+            resource_type = "video"
+        elif content_type == "application/pdf":
+            resource_type = "raw"
+        else:
+            resource_type = "image"
+        result = cloudinary.uploader.upload(
+            data,
+            public_id=f"ahance/{file_id}",
+            resource_type=resource_type,
+            overwrite=False
+        )
+        logger.info(f"Cloudinary upload: {result['public_id']}")
+        return {"public_id": result["public_id"], "url": result["secure_url"], "size": len(data)}
+    else:
+        return _upload_local(file_id, data, content_type, ext)
 
 
 # Models
@@ -162,15 +180,17 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
         content_type = file.content_type or "application/octet-stream"
         allowed_types = [
             "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif",
-            "video/mp4", "video/quicktime", "video/webm"
+            "video/mp4", "video/quicktime", "video/webm",
+            "application/pdf"
         ]
         
         if content_type not in allowed_types:
             raise HTTPException(status_code=400, detail="Invalid file type")
         
+        ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else "bin"
         file_id = str(uuid.uuid4())
         data = await file.read()
-        result = upload_to_cloudinary(file_id, data, content_type)
+        result = upload_file_storage(file_id, data, content_type, ext)
         
         db_file = FileModel(
             id=file_id,

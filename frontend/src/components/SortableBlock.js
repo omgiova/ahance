@@ -9,6 +9,7 @@ import GridBlock from '@/components/blocks/GridBlock';
 import CarouselBlock from '@/components/blocks/CarouselBlock';
 import VideoBlock from '@/components/blocks/VideoBlock';
 import EmbedBlock from '@/components/blocks/EmbedBlock';
+import PdfBlock from '@/components/blocks/PdfBlock';
 import SeparatorBlock from '@/components/blocks/SeparatorBlock';
 import SpacerBlock from '@/components/blocks/SpacerBlock';
 
@@ -19,6 +20,7 @@ const BLOCK_COMPONENTS = {
   carousel: CarouselBlock,
   video: VideoBlock,
   embed: EmbedBlock,
+  pdf: PdfBlock,
   separator: SeparatorBlock,
   spacer: SpacerBlock
 };

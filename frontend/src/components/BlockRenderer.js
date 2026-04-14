@@ -2,6 +2,18 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import ReactPlayer from 'react-player';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+
+pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+
+function toEmbeddableUrl(url) {
+  if (!url) return url;
+  const gd = url.match(/drive\.google\.com\/file\/d\/([^/?]+)/);
+  if (gd) return `https://drive.google.com/file/d/${gd[1]}/preview`;
+  return url;
+}
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -229,6 +241,36 @@ export default function BlockRenderer({ block }) {
         const height = block.settings?.height || '50';
         return <div style={{ height: `${height}px` }} />;
 
+      case 'pdf': {
+        const pdfUrl = block.content?.url;
+        if (!pdfUrl) return null;
+        const pdfHeight = parseInt(block.settings?.height || '700', 10);
+        const embeddableUrl = toEmbeddableUrl(pdfUrl);
+        const isGoogleDrive = pdfUrl.includes('drive.google.com');
+
+        if (block.settings?.viewer === 'pdfjs') {
+          if (isGoogleDrive) {
+            return (
+              <div className="flex items-center justify-center bg-black/5 rounded p-6 text-black/50 text-sm" style={{ height: pdfHeight }}>
+                Google Drive não é compatível com PDF.js (CORS). Use o modo iframe.
+              </div>
+            );
+          }
+          return <PdfJsViewer url={embeddableUrl} height={pdfHeight} />;
+        }
+
+        return (
+          <iframe
+            src={embeddableUrl}
+            width="100%"
+            height={`${pdfHeight}px`}
+            title={block.content?.filename || 'PDF'}
+            loading="lazy"
+            style={{ border: 'none', display: 'block' }}
+          />
+        );
+      }
+
       default:
         return null;
     }
@@ -261,6 +303,62 @@ export default function BlockRenderer({ block }) {
           />
         </div>,
         document.body
+      )}
+    </div>
+  );
+}
+
+function PdfJsViewer({ url, height }) {
+  const [numPages, setNumPages] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [error, setError] = useState(null);
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center bg-black/10 rounded p-8 text-black/50" style={{ height }}>
+        Não foi possível carregar o PDF via PDF.js. Tente o modo iframe.
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-4">
+      <Document
+        file={url}
+        onLoadSuccess={({ numPages }) => { setNumPages(numPages); setCurrentPage(1); }}
+        onLoadError={() => setError(true)}
+        loading={
+          <div className="flex items-center justify-center bg-black/5 rounded" style={{ height }}>
+            <span className="text-black/40">Carregando PDF...</span>
+          </div>
+        }
+      >
+        <Page
+          pageNumber={currentPage}
+          height={height}
+          renderTextLayer
+          renderAnnotationLayer
+        />
+      </Document>
+
+      {numPages && numPages > 1 && (
+        <div className="flex items-center gap-4 text-sm text-black/60">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage <= 1}
+            className="px-3 py-1 rounded bg-black/10 hover:bg-black/20 disabled:opacity-30 transition-colors"
+          >
+            ‹ Anterior
+          </button>
+          <span>{currentPage} / {numPages}</span>
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(numPages, p + 1))}
+            disabled={currentPage >= numPages}
+            className="px-3 py-1 rounded bg-black/10 hover:bg-black/20 disabled:opacity-30 transition-colors"
+          >
+            Próxima ›
+          </button>
+        </div>
       )}
     </div>
   );

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Plus, Type, Image as ImageIcon, Grid3x3, Play, Link2, Minus, Space } from 'lucide-react';
+import { Plus, Type, Image as ImageIcon, Grid3x3, Play, Link2, Minus, Space, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SortableBlock from '@/components/SortableBlock';
 import { v4 as uuidv4 } from 'uuid';
@@ -14,6 +14,7 @@ const BLOCK_TYPES = [
   { type: 'carousel', label: 'Carrossel', icon: Play },
   { type: 'video', label: 'Vídeo', icon: Play },
   { type: 'embed', label: 'Embed', icon: Link2 },
+  { type: 'pdf', label: 'PDF', icon: FileText },
   { type: 'separator', label: 'Separador', icon: Minus },
   { type: 'spacer', label: 'Espaço', icon: Space }
 ];
