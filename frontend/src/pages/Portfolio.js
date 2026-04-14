@@ -66,20 +66,20 @@ export default function Portfolio() {
         className="fixed top-0 left-0 right-0 z-50 bg-[#fffeec]/90 backdrop-blur-sm border-b border-black/10"
       >
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <nav className="flex items-center justify-center gap-8">
+          <nav className="flex items-center justify-end gap-8">
               <button
                 onClick={() => scrollToSection('sobre')}
                 className="text-base text-black/70 hover:text-black transition-colors"
                 style={{ fontFamily: 'EB Garamond, serif' }}
               >
-                Sobre
+                SOBRE
               </button>
               <button
                 onClick={() => scrollToSection('projetos')}
                 className="text-base text-black/70 hover:text-black transition-colors"
                 style={{ fontFamily: 'EB Garamond, serif' }}
               >
-                Projetos
+                PROJETOS
               </button>
               <div className="relative">
                 <button
@@ -87,7 +87,7 @@ export default function Portfolio() {
                   className="text-base text-black/70 hover:text-black transition-colors flex items-center gap-1"
                   style={{ fontFamily: 'EB Garamond, serif' }}
                 >
-                  Currículo
+                  CURRÍCULO
                   <ChevronDown className="w-4 h-4" />
                 </button>
                 {showResumeDropdown && (
@@ -158,7 +158,7 @@ export default function Portfolio() {
         </div>
 
         {/* Content Overlay on Video */}
-        <div className="absolute inset-0 flex flex-col items-center justify-start pt-32 py-12">
+        <div className="absolute inset-0 flex flex-col items-center justify-start pt-12 py-12">
           {/* Main Title - moved up */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -184,29 +184,43 @@ export default function Portfolio() {
 
       {/* Infinite Marquee Section */}
       <div className="bg-[#fffeec] py-4 overflow-hidden border-y border-black/5 relative z-10">
-        <motion.div 
-          className="flex whitespace-nowrap gap-8"
-          animate={{ x: [0, -1000] }}
-          transition={{ 
-            duration: 10, 
-            repeat: Infinity, 
-            ease: "linear" 
-          }}
-        >
-          {/* Repetir o conjunto de palavras para criar o efeito infinito */}
-          {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-8 text-4xl md:text-5xl italic text-black font-normal" style={{ fontFamily: 'EB Garamond, serif' }}>
+        <style>{`
+          @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+          .marquee-track {
+            display: flex;
+            width: max-content;
+            animation: marquee 30s linear infinite;
+          }
+        `}</style>
+        <div className="marquee-track">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-8 text-3xl md:text-4xl italic text-black font-normal pr-8" style={{ fontFamily: 'EB Garamond, serif' }}>
               <span>criatividade</span>
               <div className="w-3 h-3 bg-[#e38e4d] rounded-full shrink-0" />
-              <span>tecnologia</span>
+              <span>SEO</span>
               <div className="w-3 h-3 bg-[#e38e4d] rounded-full shrink-0" />
-              <span>redação</span>
+              <span>copywriting</span>
               <div className="w-3 h-3 bg-[#e38e4d] rounded-full shrink-0" />
               <span>automação</span>
               <div className="w-3 h-3 bg-[#e38e4d] rounded-full shrink-0" />
+              <span>conteúdo</span>
+              <div className="w-3 h-3 bg-[#e38e4d] rounded-full shrink-0" />
+              <span>social media</span>
+              <div className="w-3 h-3 bg-[#e38e4d] rounded-full shrink-0" />
+              <span>estratégia</span>
+              <div className="w-3 h-3 bg-[#e38e4d] rounded-full shrink-0" />
+              <span>performance</span>
+              <div className="w-3 h-3 bg-[#e38e4d] rounded-full shrink-0" />
+              <span>tradução</span>
+              <div className="w-3 h-3 bg-[#e38e4d] rounded-full shrink-0" />
+              <span>benchmarking</span>
+              <div className="w-3 h-3 bg-[#e38e4d] rounded-full shrink-0" />
             </div>
           ))}
-        </motion.div>
+        </div>
       </div>
 
       {/* About Section */}
@@ -239,7 +253,7 @@ export default function Portfolio() {
           >
             Giovani Amorim
           </h2>
-          <div className="space-y-6 text-2xl text-black/80" style={{ fontFamily: 'EB Garamond, serif' }}>
+          <div className="space-y-6 text-xl text-black/80" style={{ fontFamily: 'EB Garamond, serif' }}>
             <p>
               Com mais de 8 anos no cruzamento entre criatividade, estratégia e tecnologia, desenvolvo e executo campanhas que conectam marcas ao público certo por meio da minha escrita consistente e persuasiva e minha expertise em comunicação.
 

@@ -63,7 +63,7 @@ export default function Home() {
                 Giovani Amorim
               </h1>
               <p className="text-zinc-400 text-sm" style={{ fontFamily: 'Manrope, sans-serif' }}>
-                Designer & Criativo
+                Redator | Estrategista de conteúdo
               </p>
             </div>
             <div className="flex items-center gap-3">
