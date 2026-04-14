@@ -25,17 +25,17 @@ Base.metadata.create_all(bind=engine)
 
 # Migrations: add new columns if they don't exist
 def run_migrations():
-    with engine.connect() as conn:
+    migrations = [
+        "ALTER TABLE projects ADD COLUMN IF NOT EXISTS client_logo VARCHAR",
+        "ALTER TABLE tags ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN DEFAULT FALSE",
+    ]
+    for sql in migrations:
         try:
-            conn.execute(text("ALTER TABLE projects ADD COLUMN client_logo VARCHAR"))
-            conn.commit()
-        except Exception:
-            pass  # column already exists
-        try:
-            conn.execute(text("ALTER TABLE tags ADD COLUMN is_pinned BOOLEAN DEFAULT FALSE"))
-            conn.commit()
-        except Exception:
-            pass  # column already exists
+            with engine.connect() as conn:
+                conn.execute(text(sql))
+                conn.commit()
+        except Exception as e:
+            logger.warning(f"Migration skipped: {e}")
 
 run_migrations()
 
@@ -450,17 +450,20 @@ async def delete_project(project_id: str, db: Session = Depends(get_db)):
 async def get_all_tags(db: Session = Depends(get_db)):
     """Get all global tags"""
     try:
-        tags = db.query(TagModel).all()
-        return [{"id": t.id, "name": t.name, "bgColor": t.bg_color, "textColor": t.text_color, "isPinned": bool(getattr(t, 'is_pinned', False))} for t in tags]
+        # Use raw SQL to avoid ORM column mismatch issues during migrations
+        result = db.execute(text("SELECT id, name, bg_color, text_color FROM tags")).fetchall()
+        # Try to get is_pinned if column exists
+        try:
+            pinned_result = db.execute(text("SELECT id, is_pinned FROM tags")).fetchall()
+            pinned_map = {r[0]: bool(r[1]) for r in pinned_result}
+        except Exception:
+            db.rollback()
+            pinned_map = {}
+        return [{"id": r[0], "name": r[1], "bgColor": r[2], "textColor": r[3], "isPinned": pinned_map.get(r[0], False)} for r in result]
     except Exception as e:
         logger.error(f"Get tags failed: {e}")
-        # Fallback: query without is_pinned in case migration hasn't run yet
-        try:
-            result = db.execute(text("SELECT id, name, bg_color, text_color FROM tags")).fetchall()
-            return [{"id": r[0], "name": r[1], "bgColor": r[2], "textColor": r[3], "isPinned": False} for r in result]
-        except Exception as e2:
-            logger.error(f"Get tags fallback failed: {e2}")
-            raise HTTPException(status_code=500, detail=str(e))
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @api_router.post("/tags")
