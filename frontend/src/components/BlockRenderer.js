@@ -6,6 +6,12 @@ import ReactPlayer from 'react-player';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+function getMediaUrl(path) {
+  if (!path) return null;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  return `${API}/files/${path}`;
+}
+
 export default function BlockRenderer({ block }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [expandedImage, setExpandedImage] = useState(null);
@@ -43,7 +49,7 @@ export default function BlockRenderer({ block }) {
       case 'image':
         if (!block.content.image) return null;
         const imageWidth = block.settings?.width || '100';
-        const fullImageUrl = `${API}/files/${block.content.image}`;
+        const fullImageUrl = getMediaUrl(block.content.image);
         return (
           <div className="flex justify-center">
             <div style={{ width: `${imageWidth}%` }}>
@@ -66,7 +72,7 @@ export default function BlockRenderer({ block }) {
             style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
           >
             {block.content.images.map((image, index) => {
-              const gridImgUrl = `${API}/files/${image}`;
+              const gridImgUrl = getMediaUrl(image);
               return (
                 <div key={index} className="overflow-hidden">
                   <img
@@ -86,7 +92,7 @@ export default function BlockRenderer({ block }) {
         if (carouselItems.length === 0) return null;
         
         const renderCarouselItem = (item, index) => {
-          const fullUrl = item.sourceType === 'url' ? item.url : `${API}/files/${item.url}`;
+          const fullUrl = item.sourceType === 'url' ? item.url : getMediaUrl(item.url);
 
           if (item.type === 'video') {
             return (
@@ -162,7 +168,7 @@ export default function BlockRenderer({ block }) {
 
       case 'video':
         const videoSrc = block.content.type === 'upload' && block.content.video
-          ? `${API}/files/${block.content.video}`
+          ? getMediaUrl(block.content.video)
           : block.content.url;
         
         if (!videoSrc) return null;
@@ -236,14 +242,16 @@ export default function BlockRenderer({ block }) {
 
         // Normaliza Google Drive para preview embeddable
         const gdMatch = pdfUrl.match(/drive\.google\.com\/file\/d\/([^/?]+)/);
+        const isGoogleDrivePreview = pdfUrl.includes('drive.google.com') && pdfUrl.includes('/preview');
         const normalizedUrl = gdMatch
           ? `https://drive.google.com/file/d/${gdMatch[1]}/preview`
           : pdfUrl;
 
-        // PDF.js mode: usa Google Docs Viewer (funciona com qualquer PDF público)
-        const iframeSrc = block.settings?.viewer === 'pdfjs'
-          ? `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(normalizedUrl)}`
-          : normalizedUrl;
+        // Usa Google Docs Viewer sempre, exceto se já for um Google Drive /preview
+        // (evita download de arquivos Cloudinary raw/upload sem content-type inline)
+        const iframeSrc = isGoogleDrivePreview
+          ? normalizedUrl
+          : `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(normalizedUrl)}`;
 
         return (
           <iframe

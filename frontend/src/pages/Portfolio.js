@@ -9,6 +9,12 @@ import BlockRenderer from '@/components/BlockRenderer';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+function getMediaUrl(path) {
+  if (!path) return null;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  return `${API}/files/${path}`;
+}
+
 const VIDEO_URL = 'https://customer-assets.emergentagent.com/job_behance-style/artifacts/zeh5zsql_ascii-video-1775235924403.mp4';
 const LOGO_URL = 'https://customer-assets.emergentagent.com/job_behance-style/artifacts/ccsqrvdt_EB%20Garamond%20%281%29.png';
 
@@ -406,7 +412,7 @@ export default function Portfolio() {
                         project.cover_image && (
                           <div className="w-full">
                             <img
-                              src={`${API}/files/${project.cover_image}`}
+                              src={getMediaUrl(project.cover_image)}
                               alt={project.title}
                               className="w-full h-auto"
                             />
