@@ -29,6 +29,7 @@ class ProjectModel(Base):
     published = Column(Boolean, default=False)
     blocks = Column(JSON, default=list)
     cover_image = Column(String, nullable=True)
+    client_logo = Column(String, nullable=True)
     position = Column(Integer, default=0)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

@@ -50,6 +50,7 @@ export default function AddProject() {
   const [selectedTags, setSelectedTags] = useState([]);
   const [selectedTools, setSelectedTools] = useState([]);
   const [coverImage, setCoverImage] = useState(null);
+  const [clientLogo, setClientLogo] = useState(null);
   const [isPublic, setIsPublic] = useState(true);
   const [blocks, setBlocks] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -64,6 +65,7 @@ export default function AddProject() {
       setSelectedTags(project.tags || []);
       setSelectedTools(project.tools || []);
       setCoverImage(project.cover_image || null);
+      setClientLogo(project.client_logo || null);
       setIsPublic(project.visibility === 'public');
       setBlocks(project.blocks || []);
     } catch (error) {
@@ -100,7 +102,8 @@ export default function AddProject() {
           ...block,
           order: index
         })),
-        cover_image: coverImage
+        cover_image: coverImage,
+        client_logo: clientLogo
       };
 
       if (isEditing) {
@@ -231,6 +234,8 @@ export default function AddProject() {
             isPublic={isPublic}
             setIsPublic={setIsPublic}
             coverImage={coverImage}
+            clientLogo={clientLogo}
+            setClientLogo={setClientLogo}
           />
         </div>
       </div>

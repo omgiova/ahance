@@ -13,6 +13,7 @@ from typing import List, Optional, Any, Dict
 import uuid
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from models import ProjectModel, FileModel, TagModel, get_db, engine
 from models import Base
 
@@ -21,6 +22,17 @@ load_dotenv(ROOT_DIR / '.env')
 
 # Create tables
 Base.metadata.create_all(bind=engine)
+
+# Migrations: add new columns if they don't exist
+def run_migrations():
+    with engine.connect() as conn:
+        try:
+            conn.execute(text("ALTER TABLE projects ADD COLUMN client_logo VARCHAR"))
+            conn.commit()
+        except Exception:
+            pass  # column already exists
+
+run_migrations()
 
 # Cloudinary configuration
 cloudinary.config(
@@ -100,6 +112,7 @@ class Project(BaseModel):
     title: str
     description: str = ""
     cover_image: Optional[str] = None
+    client_logo: Optional[str] = None
     category: str = ""
     tags: List[Any] = []  # Pode ser string (legado) ou objeto com name, bgColor, textColor
     tools: List[str] = []
@@ -121,6 +134,7 @@ class ProjectCreate(BaseModel):
     published: bool = False
     blocks: List[Dict[str, Any]] = []
     cover_image: Optional[str] = None
+    client_logo: Optional[str] = None
     position: int = 0
 
 
@@ -128,6 +142,7 @@ class ProjectUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     cover_image: Optional[str] = None
+    client_logo: Optional[str] = None
     category: Optional[str] = None
     tags: Optional[List[Any]] = None
     tools: Optional[List[str]] = None
@@ -280,6 +295,7 @@ async def create_project(project_data: ProjectCreate, db: Session = Depends(get_
             'published': db_project.published,
             'blocks': db_project.blocks or [],
             'cover_image': db_project.cover_image,
+            'client_logo': db_project.client_logo,
             'position': db_project.position,
             'created_at': db_project.created_at,
             'updated_at': db_project.updated_at
@@ -313,6 +329,7 @@ async def get_projects(category: Optional[str] = None, tag: Optional[str] = None
             'published': p.published,
             'blocks': p.blocks or [],
             'cover_image': p.cover_image,
+            'client_logo': p.client_logo,
             'position': p.position,
             'created_at': p.created_at,
             'updated_at': p.updated_at
@@ -341,6 +358,7 @@ async def get_project(project_id: str, db: Session = Depends(get_db)):
             'published': project.published,
             'blocks': project.blocks or [],
             'cover_image': project.cover_image,
+            'client_logo': project.client_logo,
             'position': project.position,
             'created_at': project.created_at,
             'updated_at': project.updated_at
@@ -380,6 +398,7 @@ async def update_project(project_id: str, update_data: ProjectUpdate, db: Sessio
             'published': project.published,
             'blocks': project.blocks or [],
             'cover_image': project.cover_image,
+            'client_logo': project.client_logo,
             'position': project.position,
             'created_at': project.created_at,
             'updated_at': project.updated_at

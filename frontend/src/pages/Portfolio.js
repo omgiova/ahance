@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -29,6 +30,7 @@ export default function Portfolio() {
   const [loading, setLoading] = useState(true);
   const [showResumeDropdown, setShowResumeDropdown] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [expandedLogo, setExpandedLogo] = useState(null);
 
   useEffect(() => {
     fetchProjects();
@@ -370,12 +372,23 @@ export default function Portfolio() {
                   >
                     {/* Project Header */}
                     <div className="space-y-4">
-                      <h3 
-                        className="text-4xl md:text-5xl font-normal text-black"
-                        style={{ fontFamily: 'EB Garamond, serif' }}
-                      >
-                        {project.title}
-                      </h3>
+                      <div className="flex items-center gap-6">
+                        <h3 
+                          className="text-4xl md:text-5xl font-normal text-black"
+                          style={{ fontFamily: 'EB Garamond, serif' }}
+                        >
+                          {project.title}
+                        </h3>
+                        {project.client_logo && (
+                          <img
+                            src={getMediaUrl(project.client_logo)}
+                            alt="Logo do cliente"
+                            className="w-16 h-16 object-contain cursor-pointer shrink-0"
+                            style={{ mixBlendMode: 'multiply' }}
+                            onClick={() => setExpandedLogo(getMediaUrl(project.client_logo))}
+                          />
+                        )}
+                      </div>
                       {project.description && (
                         <p 
                           className="text-lg text-black/70"
@@ -459,6 +472,28 @@ export default function Portfolio() {
           </p>
         </div>
       </footer>
+
+      {/* Client logo lightbox */}
+      {expandedLogo && createPortal(
+        <div
+          className="fixed inset-0 z-[999999] bg-black/40 backdrop-blur-2xl flex items-center justify-center p-4 animate-in fade-in duration-300"
+          onClick={() => setExpandedLogo(null)}
+        >
+          <button
+            className="absolute top-8 right-8 bg-[#F6DFCF] text-zinc-400 hover:scale-110 active:scale-95 transition-all p-3 rounded-full shadow-2xl z-[1000000] flex items-center justify-center"
+            onClick={(e) => { e.stopPropagation(); setExpandedLogo(null); }}
+          >
+            <X className="w-8 h-8 stroke-[1px]" />
+          </button>
+          <img
+            src={expandedLogo}
+            alt="Logo do cliente"
+            className="max-w-[720px] max-h-[720px] w-auto h-auto object-contain shadow-[0_0_50px_rgba(0,0,0,0.3)] animate-in zoom-in-95 duration-500"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
