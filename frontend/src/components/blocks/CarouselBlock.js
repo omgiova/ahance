@@ -16,6 +16,18 @@ export default function CarouselBlock({ block, updateBlock }) {
   const [showUrlInput, setShowUrlInput] = useState(false);
   const fileInputRef = useRef(null);
 
+  const parseGoogleDriveUrl = (raw) => {
+    try {
+      const u = new URL(raw);
+      if (!u.host.includes('drive.google.com')) return null;
+      const match = u.pathname.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+      if (match) return `https://drive.google.com/file/d/${match[1]}/preview`;
+      const id = u.searchParams.get('id');
+      if (id) return `https://drive.google.com/file/d/${id}/preview`;
+    } catch (_) {}
+    return null;
+  };
+
   // Normaliza itens para suportar tanto o formato antigo (apenas imagens) quanto o novo (mídia mista)
   const items = block.content.items || (block.content.images || []).map(img => ({ type: 'image', url: img }));
 
@@ -60,12 +72,11 @@ export default function CarouselBlock({ block, updateBlock }) {
 
   const handleAddUrl = () => {
     if (!videoUrl.trim()) return;
-    
-    const newItem = {
-      type: 'video',
-      url: videoUrl.trim(),
-      sourceType: 'url'
-    };
+
+    const gdriveEmbed = parseGoogleDriveUrl(videoUrl.trim());
+    const newItem = gdriveEmbed
+      ? { type: 'gdrive', url: gdriveEmbed, sourceType: 'url', orientation: 'landscape' }
+      : { type: 'video', url: videoUrl.trim(), sourceType: 'url' };
 
     updateBlock(block.id, {
       content: {
@@ -77,7 +88,7 @@ export default function CarouselBlock({ block, updateBlock }) {
 
     setVideoUrl('');
     setShowUrlInput(false);
-    toast.success('Vídeo adicionado via URL!');
+    toast.success(gdriveEmbed ? 'Vídeo do Google Drive adicionado!' : 'Vídeo adicionado via URL!');
   };
 
   const removeItem = (index) => {
@@ -98,9 +109,38 @@ export default function CarouselBlock({ block, updateBlock }) {
     setCurrentIndex((prev) => (prev - 1 + items.length) % items.length);
   };
 
+  const ORIENTATIONS = [
+    { value: 'landscape', label: 'Horizontal', ratio: '56.25%' },
+    { value: 'portrait',  label: 'Vertical',   ratio: '177.78%' },
+    { value: 'square',    label: 'Quadrado',   ratio: '100%' },
+  ];
+
+  const updateItemOrientation = (index, orientation) => {
+    const newItems = items.map((it, i) => i === index ? { ...it, orientation } : it);
+    updateBlock(block.id, { content: { ...block.content, items: newItems } });
+  };
+
   const renderCurrentItem = () => {
     const item = items[currentIndex];
     if (!item) return null;
+
+    if (item.type === 'gdrive') {
+      const ratioMap = { landscape: '56.25%', portrait: '177.78%', square: '100%' };
+      const paddingTop = ratioMap[item.orientation] || '56.25%';
+      const width = item.orientation === 'portrait' ? '338px' : '100%';
+      return (
+        <div className="w-full h-full flex items-center justify-center">
+          <div style={{ position: 'relative', paddingTop, width, maxWidth: '100%' }}>
+            <iframe
+              src={item.url}
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+            />
+          </div>
+        </div>
+      );
+    }
 
     const fullUrl = item.sourceType === 'url' ? item.url : `${API}/files/${item.url}`;
 
@@ -108,18 +148,9 @@ export default function CarouselBlock({ block, updateBlock }) {
       return (
         <div className="w-full h-full flex items-center justify-center">
           {item.sourceType === 'url' ? (
-            <ReactPlayer 
-              url={fullUrl} 
-              width="100%" 
-              height="100%" 
-              controls 
-            />
+            <ReactPlayer url={fullUrl} width="100%" height="100%" controls />
           ) : (
-            <video 
-              src={fullUrl} 
-              controls 
-              className="max-w-full max-h-full object-contain" 
-            />
+            <video src={fullUrl} controls className="max-w-full max-h-full object-contain" />
           )}
         </div>
       );
@@ -170,7 +201,7 @@ export default function CarouselBlock({ block, updateBlock }) {
           <Input
             value={videoUrl}
             onChange={(e) => setVideoUrl(e.target.value)}
-            placeholder="Cole o link do YouTube, Vimeo..."
+            placeholder="Cole o link do YouTube, Vimeo, Google Drive..."
             className="h-8 bg-black/40 border-white/10"
           />
           <Button size="sm" onClick={handleAddUrl} className="bg-amber-500 text-zinc-950">
@@ -190,6 +221,25 @@ export default function CarouselBlock({ block, updateBlock }) {
               <X className="w-4 h-4" />
             </button>
           </div>
+
+          {items[currentIndex]?.type === 'gdrive' && (
+            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full px-3 py-1.5 z-10">
+              <span className="text-xs text-zinc-400">Formato:</span>
+              {ORIENTATIONS.map(o => (
+                <button
+                  key={o.value}
+                  onClick={() => updateItemOrientation(currentIndex, o.value)}
+                  className={`text-xs px-2 py-0.5 rounded transition-colors ${
+                    (items[currentIndex].orientation || 'landscape') === o.value
+                      ? 'bg-amber-500 text-zinc-950'
+                      : 'text-zinc-300 hover:text-white'
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           {items.length > 1 && (
             <>

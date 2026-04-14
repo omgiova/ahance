@@ -79,6 +79,12 @@ export default function AddProject() {
   useEffect(() => {
     if (isEditing) {
       loadProject();
+    } else {
+      // Auto-select pinned tags for new projects
+      axios.get(`${API}/tags`).then(res => {
+        const pinned = res.data.filter(t => t.isPinned);
+        if (pinned.length > 0) setSelectedTags(pinned);
+      }).catch(() => {});
     }
   }, [id, isEditing, loadProject]);
 

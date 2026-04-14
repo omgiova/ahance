@@ -92,6 +92,24 @@ export default function BlockRenderer({ block }) {
         if (carouselItems.length === 0) return null;
         
         const renderCarouselItem = (item, index) => {
+          if (item.type === 'gdrive') {
+            const ratioMap = { landscape: '56.25%', portrait: '177.78%', square: '100%' };
+            const paddingTop = ratioMap[item.orientation] || '56.25%';
+            const width = item.orientation === 'portrait' ? '394px' : '100%';
+            return (
+              <div className="w-full h-full flex items-center justify-center">
+                <div style={{ position: 'relative', paddingTop, width, maxWidth: '100%' }}>
+                  <iframe
+                    src={item.url}
+                    allow="autoplay; fullscreen; picture-in-picture"
+                    allowFullScreen
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                  />
+                </div>
+              </div>
+            );
+          }
+
           const fullUrl = item.sourceType === 'url' ? item.url : getMediaUrl(item.url);
 
           if (item.type === 'video') {

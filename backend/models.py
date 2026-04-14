@@ -54,6 +54,7 @@ class TagModel(Base):
     name = Column(String, unique=True, index=True)
     bg_color = Column(String, default="#000000")
     text_color = Column(String, default="#FFFFFF")
+    is_pinned = Column(Boolean, default=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 

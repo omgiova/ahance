@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, Check, Upload, X } from 'lucide-react';
+import { Plus, Trash2, Check, Upload, X, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -40,6 +40,7 @@ export default function ProjectSettings({
   const [loadingTags, setLoadingTags] = useState(true);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const logoInputRef = useRef(null);
+  const [pinModal, setPinModal] = useState(null); // { tag, action: 'pin'|'unpin' }
 
   useEffect(() => {
     fetchAllTags();
@@ -116,6 +117,55 @@ export default function ProjectSettings({
     return selectedTags.some(t => 
       (typeof t === 'string' ? t === tag.name : t.id === tag.id)
     );
+  };
+
+  const handlePinClick = (tag) => {
+    if (tag.isPinned) {
+      setPinModal({ tag, action: 'unpin' });
+    } else {
+      setPinModal({ tag, action: 'pin' });
+    }
+  };
+
+  const confirmPin = async () => {
+    const { tag } = pinModal;
+    try {
+      await axios.patch(`${API}/tags/${tag.id}/pin`);
+      setAllTags(allTags.map(t => t.id === tag.id ? { ...t, isPinned: true } : t));
+      // Ensure it's selected in current project too
+      if (!isTagSelected(tag)) setSelectedTags([...selectedTags, tag]);
+      toast.success(`Tag "${tag.name}" aplicada em todos os projetos!`);
+    } catch {
+      toast.error('Erro ao fixar tag');
+    } finally {
+      setPinModal(null);
+    }
+  };
+
+  const confirmUnpinThis = async () => {
+    const { tag } = pinModal;
+    // Remove only from current project
+    setSelectedTags(selectedTags.filter(t =>
+      (typeof t === 'string' ? t !== tag.name : t.id !== tag.id)
+    ));
+    toast.success(`Tag removida deste projeto.`);
+    setPinModal(null);
+  };
+
+  const confirmUnpinAll = async () => {
+    const { tag } = pinModal;
+    try {
+      await axios.patch(`${API}/tags/${tag.id}/unpin`);
+      setAllTags(allTags.map(t => t.id === tag.id ? { ...t, isPinned: false } : t));
+      setSelectedTags(selectedTags.filter(t =>
+        (typeof t === 'string' ? t !== tag.name : t.id !== tag.id)
+      ));
+      toast.success(`Tag "${tag.name}" removida de todos os projetos.`);
+    } catch {
+      toast.error('Erro ao remover tag de todos os projetos');
+    } finally {
+      setPinModal(null);
+    }
   };
 
   const handleLogoUpload = async (e) => {
@@ -325,6 +375,15 @@ export default function ProjectSettings({
                 const selected = isTagSelected(tag);
                 return (
                   <div key={tag.id} className="relative group">
+                    {/* Star — left, on hover */}
+                    <button
+                      onClick={() => handlePinClick(tag)}
+                      className="absolute -top-1 -left-1 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      style={{ background: tag.isPinned ? '#e38e4d' : '#6b7280' }}
+                      title={tag.isPinned ? 'Tag fixada em todos os projetos' : 'Fixar em todos os projetos'}
+                    >
+                      <Star className="w-3 h-3 text-white" fill={tag.isPinned ? 'white' : 'none'} />
+                    </button>
                     <button
                       onClick={() => toggleTagSelection(tag)}
                       className={`rounded-full px-3 py-1 text-xs flex items-center gap-2 transition-all ${
@@ -340,6 +399,7 @@ export default function ProjectSettings({
                       {selected && <span className="text-[10px]">✓</span>}
                       {tag.name}
                     </button>
+                    {/* Trash — right, on hover */}
                     <button
                       onClick={() => deleteGlobalTag(tag.id)}
                       className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -353,6 +413,36 @@ export default function ProjectSettings({
           )}
         </div>
       </div>
+
+      {/* Pin/Unpin confirmation modal */}
+      {pinModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 space-y-4">
+            {pinModal.action === 'pin' ? (
+              <>
+                <p className="text-sm text-black" style={{ fontFamily: 'EB Garamond, serif' }}>
+                  Adicionar a tag <strong>"{pinModal.tag.name}"</strong> a todos os projetos atuais e futuros?
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button onClick={() => setPinModal(null)} className="px-4 py-2 text-sm text-black/60 hover:text-black transition-colors" style={{ fontFamily: 'EB Garamond, serif' }}>Não</button>
+                  <button onClick={confirmPin} className="px-4 py-2 text-sm bg-[#e38e4d] text-white rounded-lg hover:bg-[#e38e4d]/90 transition-colors" style={{ fontFamily: 'EB Garamond, serif' }}>Sim</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-black" style={{ fontFamily: 'EB Garamond, serif' }}>
+                  Remover a tag <strong>"{pinModal.tag.name}"</strong> de onde?
+                </p>
+                <div className="flex flex-col gap-2">
+                  <button onClick={confirmUnpinThis} className="w-full px-4 py-2 text-sm border border-black/20 rounded-lg hover:bg-black/5 transition-colors text-left" style={{ fontFamily: 'EB Garamond, serif' }}>Apenas deste projeto</button>
+                  <button onClick={confirmUnpinAll} className="w-full px-4 py-2 text-sm bg-red-50 border border-red-200 text-red-700 rounded-lg hover:bg-red-100 transition-colors text-left" style={{ fontFamily: 'EB Garamond, serif' }}>Remover de todos os projetos</button>
+                  <button onClick={() => setPinModal(null)} className="w-full px-4 py-2 text-sm text-black/40 hover:text-black transition-colors text-left" style={{ fontFamily: 'EB Garamond, serif' }}>Cancelar</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }

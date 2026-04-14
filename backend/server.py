@@ -31,6 +31,11 @@ def run_migrations():
             conn.commit()
         except Exception:
             pass  # column already exists
+        try:
+            conn.execute(text("ALTER TABLE tags ADD COLUMN is_pinned BOOLEAN DEFAULT FALSE"))
+            conn.commit()
+        except Exception:
+            pass  # column already exists
 
 run_migrations()
 
@@ -446,7 +451,7 @@ async def get_all_tags(db: Session = Depends(get_db)):
     """Get all global tags"""
     try:
         tags = db.query(TagModel).all()
-        return [{"id": t.id, "name": t.name, "bgColor": t.bg_color, "textColor": t.text_color} for t in tags]
+        return [{"id": t.id, "name": t.name, "bgColor": t.bg_color, "textColor": t.text_color, "isPinned": bool(t.is_pinned)} for t in tags]
     except Exception as e:
         logger.error(f"Get tags failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -472,7 +477,7 @@ async def create_tag(tag: dict, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(tag_doc)
         
-        return {"id": tag_doc.id, "name": tag_doc.name, "textColor": tag_doc.text_color, "bgColor": tag_doc.bg_color}
+        return {"id": tag_doc.id, "name": tag_doc.name, "textColor": tag_doc.text_color, "bgColor": tag_doc.bg_color, "isPinned": False}
     except HTTPException:
         raise
     except Exception as e:
@@ -496,6 +501,57 @@ async def delete_tag(tag_id: str, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         logger.error(f"Delete tag failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.patch("/tags/{tag_id}/pin")
+async def pin_tag(tag_id: str, db: Session = Depends(get_db)):
+    """Set tag as pinned and add it to all existing projects"""
+    try:
+        tag = db.query(TagModel).filter(TagModel.id == tag_id).first()
+        if not tag:
+            raise HTTPException(status_code=404, detail="Tag not found")
+        tag.is_pinned = True
+        db.commit()
+
+        tag_obj = {"id": tag.id, "name": tag.name, "bgColor": tag.bg_color, "textColor": tag.text_color}
+        projects = db.query(ProjectModel).all()
+        for project in projects:
+            tags = list(project.tags or [])
+            already = any((t.get("id") == tag.id if isinstance(t, dict) else t == tag.name) for t in tags)
+            if not already:
+                tags.append(tag_obj)
+                project.tags = tags
+        db.commit()
+        return {"message": "Tag pinned and applied to all projects"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Pin tag failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.patch("/tags/{tag_id}/unpin")
+async def unpin_tag(tag_id: str, db: Session = Depends(get_db)):
+    """Unpin tag and remove it from all projects"""
+    try:
+        tag = db.query(TagModel).filter(TagModel.id == tag_id).first()
+        if not tag:
+            raise HTTPException(status_code=404, detail="Tag not found")
+        tag.is_pinned = False
+        db.commit()
+
+        projects = db.query(ProjectModel).all()
+        for project in projects:
+            tags = list(project.tags or [])
+            new_tags = [t for t in tags if not (t.get("id") == tag_id if isinstance(t, dict) else t == tag.name)]
+            project.tags = new_tags
+        db.commit()
+        return {"message": "Tag unpinned and removed from all projects"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unpin tag failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
