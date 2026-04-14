@@ -3,6 +3,8 @@ from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
+import cloudinary
+import cloudinary.uploader
 import os
 import logging
 from pathlib import Path
@@ -20,7 +22,15 @@ load_dotenv(ROOT_DIR / '.env')
 # Create tables
 Base.metadata.create_all(bind=engine)
 
-# Local Storage configuration
+# Cloudinary configuration
+cloudinary.config(
+    cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.environ.get("CLOUDINARY_API_KEY"),
+    api_secret=os.environ.get("CLOUDINARY_API_SECRET"),
+    secure=True
+)
+
+# Local Storage (mantido para arquivos legados já no repositório)
 APP_NAME = "behance-portfolio"
 UPLOADS_DIR = ROOT_DIR / "uploads"
 UPLOADS_DIR.mkdir(exist_ok=True)
@@ -42,57 +52,18 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# Local file storage functions
-def put_object(path: str, data: bytes, content_type: str) -> dict:
-    """Upload file to local storage"""
-    try:
-        # Create full file path
-        full_path = UPLOADS_DIR / path
-        full_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        # Write file
-        with open(full_path, "wb") as f:
-            f.write(data)
-        
-        logger.info(f"File uploaded: {path}")
-        return {"path": path, "size": len(data)}
-    except Exception as e:
-        logger.error(f"Upload failed: {e}")
-        raise
-
-
-def get_object(path: str) -> tuple:
-    """Download file from local storage"""
-    try:
-        full_path = UPLOADS_DIR / path
-        
-        if not full_path.exists():
-            raise FileNotFoundError(f"File not found: {path}")
-        
-        with open(full_path, "rb") as f:
-            data = f.read()
-        
-        # Simple content type detection
-        if path.endswith(('.jpg', '.jpeg')):
-            content_type = "image/jpeg"
-        elif path.endswith('.png'):
-            content_type = "image/png"
-        elif path.endswith('.webp'):
-            content_type = "image/webp"
-        elif path.endswith('.gif'):
-            content_type = "image/gif"
-        elif path.endswith('.mp4'):
-            content_type = "video/mp4"
-        elif path.endswith('.webm'):
-            content_type = "video/webm"
-        else:
-            content_type = "application/octet-stream"
-        
-        logger.info(f"File downloaded: {path}")
-        return data, content_type
-    except Exception as e:
-        logger.error(f"Download failed: {e}")
-        raise
+# Cloudinary upload
+def upload_to_cloudinary(file_id: str, data: bytes, content_type: str) -> dict:
+    """Upload file to Cloudinary"""
+    resource_type = "video" if content_type.startswith("video/") else "image"
+    result = cloudinary.uploader.upload(
+        data,
+        public_id=f"ahance/{file_id}",
+        resource_type=resource_type,
+        overwrite=False
+    )
+    logger.info(f"Cloudinary upload: {result['public_id']}")
+    return {"public_id": result["public_id"], "url": result["secure_url"], "size": len(data)}
 
 
 # Models
@@ -186,7 +157,7 @@ async def root():
 
 @api_router.post("/upload", response_model=FileUploadResponse)
 async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    """Upload image or video file"""
+    """Upload image or video file to Cloudinary"""
     try:
         content_type = file.content_type or "application/octet-stream"
         allowed_types = [
@@ -197,16 +168,13 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
         if content_type not in allowed_types:
             raise HTTPException(status_code=400, detail="Invalid file type")
         
-        ext = file.filename.split(".")[-1] if "." in file.filename else "bin"
         file_id = str(uuid.uuid4())
-        path = f"{APP_NAME}/uploads/{file_id}.{ext}"
-        
         data = await file.read()
-        result = put_object(path, data, content_type)
+        result = upload_to_cloudinary(file_id, data, content_type)
         
         db_file = FileModel(
             id=file_id,
-            storage_path=result["path"],
+            storage_path=result["public_id"],
             original_filename=file.filename,
             content_type=content_type,
             size=result["size"],
@@ -217,11 +185,11 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
         
         return FileUploadResponse(
             id=file_id,
-            storage_path=f"{APP_NAME}/uploads/{file_id}.{ext}",
+            storage_path=result["public_id"],
             original_filename=file.filename,
             content_type=content_type,
             size=result["size"],
-            download_url=f"/api/files/{path}"
+            download_url=result["url"]
         )
     except HTTPException:
         raise

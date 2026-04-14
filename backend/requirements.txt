@@ -4,7 +4,5 @@ python-dotenv
 pydantic
 fastapi
 uvicorn[standard]
-sqlalchemy
-python-dotenv
-pydantic
 python-multipart
+cloudinary
