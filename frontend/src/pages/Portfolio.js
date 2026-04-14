@@ -66,8 +66,7 @@ export default function Portfolio() {
         className="fixed top-0 left-0 right-0 z-50 bg-[#fffeec]/90 backdrop-blur-sm border-b border-black/10"
       >
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <nav className="flex items-center justify-between">
-            <div className="flex items-center gap-8">
+          <nav className="flex items-center justify-center gap-8">
               <button
                 onClick={() => scrollToSection('sobre')}
                 className="text-base text-black/70 hover:text-black transition-colors"
@@ -114,16 +113,6 @@ export default function Portfolio() {
                   </motion.div>
                 )}
               </div>
-            </div>
-            
-            {/* Admin Link */}
-            <button
-              onClick={() => navigate('/admin')}
-              className="text-sm text-black/30 hover:text-black/50 transition-colors uppercase tracking-wider"
-              style={{ fontFamily: 'EB Garamond, serif' }}
-            >
-              Admin
-            </button>
           </nav>
         </div>
       </motion.header>
