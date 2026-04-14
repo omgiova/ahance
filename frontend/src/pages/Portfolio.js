@@ -28,9 +28,16 @@ export default function Portfolio() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showResumeDropdown, setShowResumeDropdown] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     fetchProjects();
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 300);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const fetchProjects = async () => {
@@ -79,7 +86,17 @@ export default function Portfolio() {
         animate={{ y: 0, opacity: 1 }}
         className="fixed top-0 left-0 right-0 z-50 bg-[#fffeec]/90 backdrop-blur-sm border-b border-black/10"
       >
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-6 py-4 relative">
+          {scrolled && (
+            <motion.img
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              src="/g.png"
+              alt="G"
+              className="absolute inset-y-0 left-1/2 -translate-x-1/2 h-full object-contain pointer-events-none"
+              style={{ mixBlendMode: 'multiply', opacity: 0.9 }}
+            />
+          )}
           <nav className="flex items-center justify-end gap-8">
               <button
                 onClick={() => scrollToSection('sobre')}
