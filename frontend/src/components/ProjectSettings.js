@@ -128,7 +128,10 @@ export default function ProjectSettings({
       const response = await axios.post(`${API}/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      setClientLogo(response.data.storage_path);
+      const logoPath = response.data.download_url.startsWith('http')
+        ? response.data.download_url
+        : response.data.storage_path;
+      setClientLogo(logoPath);
       toast.success('Logo do cliente enviado!');
     } catch (error) {
       toast.error('Erro ao enviar logo');

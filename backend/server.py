@@ -1,5 +1,5 @@
 from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException, Header, Query, Depends
-from fastapi.responses import Response
+from fastapi.responses import Response, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -240,6 +240,18 @@ async def download_file(path: str, db: Session = Depends(get_db)):
         full_path = UPLOADS_DIR / path
         
         if not full_path.exists():
+            # Fallback: redirect to Cloudinary if configured
+            if os.environ.get("CLOUDINARY_CLOUD_NAME"):
+                db_file = db.query(FileModel).filter(FileModel.storage_path == path).first()
+                if db_file:
+                    if db_file.content_type.startswith("video/"):
+                        resource_type = "video"
+                    elif db_file.content_type == "application/pdf":
+                        resource_type = "raw"
+                    else:
+                        resource_type = "image"
+                    cloud_url = f"https://res.cloudinary.com/{os.environ['CLOUDINARY_CLOUD_NAME']}/{resource_type}/upload/{path}"
+                    return RedirectResponse(url=cloud_url)
             raise HTTPException(status_code=404, detail="File not found")
         
         # Simple content type detection

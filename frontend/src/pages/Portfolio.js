@@ -372,7 +372,7 @@ export default function Portfolio() {
                   >
                     {/* Project Header */}
                     <div className="space-y-4">
-                      <div className="flex items-center gap-6">
+                      <div className="flex items-center justify-between gap-6">
                         <h3 
                           className="text-4xl md:text-5xl font-normal text-black"
                           style={{ fontFamily: 'EB Garamond, serif' }}
@@ -383,7 +383,7 @@ export default function Portfolio() {
                           <img
                             src={getMediaUrl(project.client_logo)}
                             alt="Logo do cliente"
-                            className="w-16 h-16 object-contain cursor-pointer shrink-0"
+                            className="w-24 h-24 object-contain cursor-pointer shrink-0"
                             style={{ mixBlendMode: 'multiply' }}
                             onClick={() => setExpandedLogo(getMediaUrl(project.client_logo))}
                           />
