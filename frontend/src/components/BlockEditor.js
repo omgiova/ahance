@@ -20,7 +20,7 @@ const BLOCK_TYPES = [
 ];
 
 export default function BlockEditor({ blocks, setBlocks, setCoverImage }) {
-  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [addMenuAt, setAddMenuAt] = useState(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -41,7 +41,7 @@ export default function BlockEditor({ blocks, setBlocks, setCoverImage }) {
     }
   };
 
-  const addBlock = (type) => {
+  const addBlock = (type, insertAt) => {
     const newBlock = {
       id: uuidv4(),
       type,
@@ -52,8 +52,14 @@ export default function BlockEditor({ blocks, setBlocks, setCoverImage }) {
       }
     };
 
-    setBlocks([...blocks, newBlock]);
-    setShowAddMenu(false);
+    if (insertAt !== undefined && insertAt !== null) {
+      const newBlocks = [...blocks];
+      newBlocks.splice(insertAt, 0, newBlock);
+      setBlocks(newBlocks);
+    } else {
+      setBlocks([...blocks, newBlock]);
+    }
+    setAddMenuAt(null);
   };
 
   const updateBlock = (id, updates) => {
@@ -80,31 +86,72 @@ export default function BlockEditor({ blocks, setBlocks, setCoverImage }) {
     }
   };
 
+  const blockTypeMenu = (index) => (
+    <AnimatePresence>
+      {addMenuAt === index && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          className="absolute top-full left-0 right-0 mt-1 bg-zinc-950/95 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.6)] z-20"
+        >
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {BLOCK_TYPES.map(({ type, label, icon: Icon }) => (
+              <button
+                key={type}
+                data-testid={`add-${type}-block`}
+                onClick={() => addBlock(type, index)}
+                className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-500/50 transition-all group"
+              >
+                <Icon className="w-6 h-6 text-zinc-400 group-hover:text-amber-500 transition-colors" />
+                <span className="text-sm text-zinc-300 group-hover:text-amber-500 transition-colors">{label}</span>
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
+  const insertDivider = (index) => (
+    <div key={`ins-${index}`} className="relative flex items-center justify-center group/ins" style={{ height: '2rem', margin: '2px 0' }}>
+      <div className="absolute inset-x-0 top-1/2 h-px bg-white/0 group-hover/ins:bg-white/10 transition-colors" />
+      <button
+        onClick={() => setAddMenuAt(addMenuAt === index ? null : index)}
+        className="relative z-10 w-7 h-7 rounded-full bg-zinc-900 border border-white/10 hover:border-amber-500/70 hover:bg-amber-500/10 flex items-center justify-center opacity-0 group-hover/ins:opacity-100 transition-all"
+      >
+        <Plus className="w-3.5 h-3.5 text-zinc-400" />
+      </button>
+      {blockTypeMenu(index)}
+    </div>
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-0">
       {/* Blocks List */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
-          <AnimatePresence>
-            {blocks.map((block) => (
+          {blocks.map((block, i) => (
+            <div key={block.id}>
+              {i === 0 && insertDivider(0)}
               <SortableBlock
-                key={block.id}
                 block={block}
                 updateBlock={updateBlock}
                 deleteBlock={deleteBlock}
                 duplicateBlock={duplicateBlock}
                 setCoverImage={setCoverImage}
               />
-            ))}
-          </AnimatePresence>
+              {insertDivider(i + 1)}
+            </div>
+          ))}
         </SortableContext>
       </DndContext>
 
       {/* Add Block Button */}
-      <div className="relative">
+      <div className="relative mt-4">
         <motion.button
           data-testid="add-block-btn"
-          onClick={() => setShowAddMenu(!showAddMenu)}
+          onClick={() => setAddMenuAt(addMenuAt === blocks.length ? null : blocks.length)}
           className="w-full bg-white/5 backdrop-blur-2xl border-2 border-dashed border-white/20 hover:border-amber-500/50 hover:bg-amber-500/5 rounded-3xl p-8 transition-all duration-300 flex items-center justify-center gap-3 group"
         >
           <Plus className="w-6 h-6 text-zinc-400 group-hover:text-amber-500 transition-colors" />
@@ -112,34 +159,7 @@ export default function BlockEditor({ blocks, setBlocks, setCoverImage }) {
             Adicionar Bloco
           </span>
         </motion.button>
-
-        {/* Block Type Menu */}
-        <AnimatePresence>
-          {showAddMenu && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="absolute top-full left-0 right-0 mt-2 bg-zinc-950/95 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.6)] z-10"
-            >
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {BLOCK_TYPES.map(({ type, label, icon: Icon }) => (
-                  <button
-                    key={type}
-                    data-testid={`add-${type}-block`}
-                    onClick={() => addBlock(type)}
-                    className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-500/50 transition-all group"
-                  >
-                    <Icon className="w-6 h-6 text-zinc-400 group-hover:text-amber-500 transition-colors" />
-                    <span className="text-sm text-zinc-300 group-hover:text-amber-500 transition-colors">
-                      {label}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {blockTypeMenu(blocks.length)}
       </div>
     </div>
   );
