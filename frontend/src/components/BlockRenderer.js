@@ -37,12 +37,14 @@ export default function BlockRenderer({ block }) {
         
         return (
           <div 
-            className={`prose max-w-none text-black/80 ${textFontSize} ${
-              block.settings?.bold ? 'font-bold' : ''
-            } ${block.settings?.italic ? 'italic' : ''}`}
+            className={`prose max-w-none text-black/80 ${textFontSize}`}
             style={{ fontFamily: textFontFamily }}
           >
-            <p className="whitespace-pre-wrap">{block.content.text}</p>
+            {block.content.html ? (
+              <div className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: block.content.html }} />
+            ) : (
+              <p className="whitespace-pre-wrap">{block.content.text}</p>
+            )}
           </div>
         );
 

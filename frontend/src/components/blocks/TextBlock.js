@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Textarea } from '@/components/ui/textarea';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -21,34 +20,51 @@ const FONT_SIZES = [
   { value: '2xl', label: 'Muito Grande', class: 'text-2xl' }
 ];
 
+const toRichTextHtml = (value = '') => {
+  if (!value) return '';
+  if (/<\/?[a-z][\s\S]*>/i.test(value)) return value;
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br>');
+};
+
 export default function TextBlock({ block, updateBlock }) {
+  const editorRef = useRef(null);
   const [text, setText] = useState(block.content.text || '');
-  const [isBold, setIsBold] = useState(block.settings?.bold || false);
-  const [isItalic, setIsItalic] = useState(block.settings?.italic || false);
+  const [isBold, setIsBold] = useState(false);
+  const [isItalic, setIsItalic] = useState(false);
   const [fontSize, setFontSize] = useState(block.settings?.fontSize || 'base');
   const [fontFamily, setFontFamily] = useState(block.settings?.fontFamily || 'serif');
 
-  const handleChange = (value) => {
-    setText(value);
+  useEffect(() => {
+    const nextHtml = block.content.html || toRichTextHtml(block.content.text || '');
+    setText(block.content.text || '');
+    if (editorRef.current && editorRef.current.innerHTML !== nextHtml) {
+      editorRef.current.innerHTML = nextHtml;
+    }
+  }, [block.id, block.content.html, block.content.text]);
+
+  const syncContent = () => {
+    const newHtml = editorRef.current?.innerHTML || '';
+    const plainText = (editorRef.current?.innerText || '').replace(/\n\n+/g, '\n\n');
+    setText(plainText);
     updateBlock(block.id, {
-      content: { ...block.content, text: value }
+      content: { ...block.content, text: plainText, html: newHtml }
     });
   };
 
-  const toggleBold = () => {
-    const newBold = !isBold;
-    setIsBold(newBold);
-    updateBlock(block.id, {
-      settings: { ...block.settings, bold: newBold }
-    });
+  const updateFormatState = () => {
+    setIsBold(Boolean(document.queryCommandState?.('bold')));
+    setIsItalic(Boolean(document.queryCommandState?.('italic')));
   };
 
-  const toggleItalic = () => {
-    const newItalic = !isItalic;
-    setIsItalic(newItalic);
-    updateBlock(block.id, {
-      settings: { ...block.settings, italic: newItalic }
-    });
+  const applyFormat = (command) => {
+    editorRef.current?.focus();
+    document.execCommand(command, false, null);
+    syncContent();
+    updateFormatState();
   };
 
   const handleFontSizeChange = (value) => {
@@ -76,7 +92,8 @@ export default function TextBlock({ block, updateBlock }) {
           <Button
             size="sm"
             variant="ghost"
-            onClick={toggleBold}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => applyFormat('bold')}
             className={`${isBold ? 'bg-black/10' : ''} text-black hover:text-black hover:bg-black/5`}
           >
             <Bold className="w-4 h-4" />
@@ -84,7 +101,8 @@ export default function TextBlock({ block, updateBlock }) {
           <Button
             size="sm"
             variant="ghost"
-            onClick={toggleItalic}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => applyFormat('italic')}
             className={`${isItalic ? 'bg-black/10' : ''} text-black hover:text-black hover:bg-black/5`}
           >
             <Italic className="w-4 h-4" />
@@ -136,17 +154,28 @@ export default function TextBlock({ block, updateBlock }) {
       </div>
 
       {/* Text Input */}
-      <Textarea
-        data-testid="text-block-input"
-        value={text}
-        onChange={(e) => handleChange(e.target.value)}
-        placeholder="Escreva seu texto aqui..."
-        rows={6}
-        className={`w-full bg-white border-black/20 text-black placeholder:text-black/40 focus-visible:ring-1 focus-visible:ring-[#e38e4d] resize-none ${
-          currentFontSize?.class || 'text-base'
-        } ${isBold ? 'font-bold' : ''} ${isItalic ? 'italic' : ''}`}
-        style={{ fontFamily: currentFontStyle }}
-      />
+      <div className="relative">
+        {!text.trim() && (
+          <div
+            className={`absolute top-3 left-3 text-black/40 pointer-events-none ${currentFontSize?.class || 'text-base'}`}
+            style={{ fontFamily: currentFontStyle }}
+          >
+            Escreva seu texto aqui...
+          </div>
+        )}
+        <div
+          ref={editorRef}
+          data-testid="text-block-input"
+          contentEditable
+          suppressContentEditableWarning
+          onInput={syncContent}
+          onBlur={syncContent}
+          onKeyUp={updateFormatState}
+          onMouseUp={updateFormatState}
+          className={`w-full min-h-[160px] rounded-md border border-black/20 bg-white px-3 py-2 text-black focus:outline-none focus:ring-1 focus:ring-[#e38e4d] whitespace-pre-wrap ${currentFontSize?.class || 'text-base'}`}
+          style={{ fontFamily: currentFontStyle }}
+        />
+      </div>
     </div>
   );
 }
