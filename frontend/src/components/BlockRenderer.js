@@ -194,20 +194,24 @@ export default function BlockRenderer({ block }) {
         if (!videoSrc) return null;
 
         return (
-          <div className="relative w-full">
+          <div
+            className="relative w-full bg-transparent overflow-hidden flex items-center justify-center"
+            style={{ height: '700px', maxHeight: 'calc(100vh - 100px)' }}
+          >
             {block.content.type === 'gdrive' ? (() => {
               const ratioMap = { landscape: '56.25%', portrait: '177.78%', square: '100%' };
-              const paddingTop = ratioMap[block.content.orientation] || '56.25%';
               const isPortrait = block.content.orientation === 'portrait';
               const isSquare = block.content.orientation === 'square';
               return (
-                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                  <div style={{
-                    position: 'relative',
-                    width: isPortrait ? '394px' : '100%',
-                    maxWidth: '100%',
-                    paddingTop: isPortrait ? '177.78%' : isSquare ? '100%' : '56.25%',
-                  }}>
+                <div className="w-full h-full flex items-center justify-center">
+                  <div
+                    style={{
+                      position: 'relative',
+                      width: isPortrait ? '394px' : '100%',
+                      maxWidth: '100%',
+                      paddingTop: isPortrait ? '177.78%' : isSquare ? '100%' : '56.25%',
+                    }}
+                  >
                     <iframe
                       src={videoSrc}
                       allow="autoplay; fullscreen; picture-in-picture"
@@ -218,28 +222,30 @@ export default function BlockRenderer({ block }) {
                 </div>
               );
             })() : block.content.type === 'url' ? (
-              <div style={{ position: 'relative', paddingTop: '56.25%' }}>
-                <ReactPlayer
-                  url={videoSrc}
-                  controls
-                  width="100%"
-                  height="100%"
-                  style={{ position: 'absolute', top: 0, left: 0 }}
-                  config={{
-                    youtube: {
-                      playerVars: { showinfo: 1 }
-                    },
-                    vimeo: {
-                      playerOptions: { responsive: true }
-                    }
-                  }}
-                />
+              <div className="w-full h-full flex items-center justify-center">
+                <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }}>
+                  <ReactPlayer
+                    url={videoSrc}
+                    controls
+                    width="100%"
+                    height="100%"
+                    style={{ position: 'absolute', top: 0, left: 0 }}
+                    config={{
+                      youtube: {
+                        playerVars: { showinfo: 1 }
+                      },
+                      vimeo: {
+                        playerOptions: { responsive: true }
+                      }
+                    }}
+                  />
+                </div>
               </div>
             ) : (
               <video
                 src={videoSrc}
                 controls
-                className="w-full h-auto"
+                className="max-w-full max-h-full object-contain"
               />
             )}
           </div>
