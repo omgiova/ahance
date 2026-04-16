@@ -34,7 +34,6 @@ export default function Portfolio() {
   const [scrolled, setScrolled] = useState(false);
   const [expandedLogo, setExpandedLogo] = useState(null);
   const [visibleCount, setVisibleCount] = useState(5);
-  const [totalProjects, setTotalProjects] = useState(0);
 
   useEffect(() => {
     try {
@@ -43,7 +42,6 @@ export default function Portfolio() {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed.projects) && parsed.projects.length > 0) {
           setProjects(parsed.projects);
-          setTotalProjects(parsed.totalProjects || parsed.projects.length);
           setVisibleCount(5);
           setLoading(false);
         }
@@ -52,7 +50,7 @@ export default function Portfolio() {
       console.warn('Portfolio cache read failed:', error);
     }
 
-    fetchProjects(5);
+    fetchProjects();
   }, []);
 
   useEffect(() => {
@@ -61,25 +59,21 @@ export default function Portfolio() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const fetchProjects = async (limit = 5) => {
+  const fetchProjects = async () => {
     try {
       const response = await axios.get(`${API}/projects`, {
         params: {
           published_only: true,
-          limit
         }
       });
 
       const fetchedProjects = response.data || [];
-      const total = parseInt(response.headers['x-total-count'] || fetchedProjects.length, 10);
 
       setProjects(fetchedProjects);
-      setTotalProjects(total);
-      setVisibleCount(limit);
+      setVisibleCount(5);
 
       localStorage.setItem(PORTFOLIO_CACHE_KEY, JSON.stringify({
         projects: fetchedProjects,
-        totalProjects: total,
         savedAt: Date.now()
       }));
     } catch (error) {
@@ -118,8 +112,8 @@ export default function Portfolio() {
   };
 
   const DECOR_SIZES = [120, 230, 180, 220, 150, 200, 180];
-  const visibleProjects = projects;
-  const hasMoreProjects = visibleCount < totalProjects;
+  const visibleProjects = projects.slice(0, visibleCount);
+  const hasMoreProjects = visibleCount < projects.length;
 
   return (
     <div className="min-h-screen bg-[#fffeec] relative overflow-x-hidden">
@@ -514,7 +508,7 @@ export default function Portfolio() {
             {!loading && hasMoreProjects && (
               <div className="flex justify-center mt-12">
                 <Button
-                  onClick={() => fetchProjects(Math.min(visibleCount + 10, totalProjects || visibleCount + 10))}
+                  onClick={() => setVisibleCount((prev) => Math.min(prev + 10, projects.length))}
                   className="bg-[#e38e4d] text-black hover:bg-[#e38e4d]/90 rounded-full px-8"
                   style={{ fontFamily: 'EB Garamond, serif' }}
                 >
