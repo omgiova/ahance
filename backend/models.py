@@ -2,12 +2,30 @@ from sqlalchemy import create_engine, Column, String, Text, DateTime, Boolean, J
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timezone
+from pathlib import Path
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+from dotenv import load_dotenv
 import json
 
 import os
-DATABASE_URL = os.environ.get("DATABASE_URL")
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / '.env')
 
-if DATABASE_URL and DATABASE_URL.startswith("sqlite"):
+
+def normalize_database_url(url):
+    if not url:
+        return None
+    parsed = urlparse(url)
+    filtered_query = [(k, v) for k, v in parse_qsl(parsed.query, keep_blank_values=True) if k.lower() != 'schema']
+    return urlunparse(parsed._replace(query=urlencode(filtered_query)))
+
+
+DATABASE_URL = normalize_database_url(os.environ.get("DATABASE_URL"))
+
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is not configured")
+
+if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 else:
     engine = create_engine(DATABASE_URL)

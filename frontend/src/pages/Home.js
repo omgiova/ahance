@@ -8,6 +8,11 @@ import axios from 'axios';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+const getCoverImageUrl = (path) => {
+  if (!path) return null;
+  return `${API}/files/${path}?w=900`;
+};
+
 export default function Home() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
@@ -149,8 +154,10 @@ export default function Home() {
                 {project.cover_image ? (
                   <div className="relative h-64 overflow-hidden">
                     <img
-                      src={`${API}/files/${project.cover_image}`}
+                      src={getCoverImageUrl(project.cover_image)}
                       alt={project.title}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />

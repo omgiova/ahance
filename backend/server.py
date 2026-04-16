@@ -7,6 +7,7 @@ import cloudinary
 import cloudinary.uploader
 import os
 import logging
+import unicodedata
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Any, Dict
@@ -86,6 +87,33 @@ def _get_resource_type_for_content_type(content_type: str) -> str:
     if content_type == "application/pdf":
         return "raw"
     return "image"
+
+def _build_cloudinary_delivery_url(public_id: str, resource_type: str, width: Optional[int] = None) -> str:
+    cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME")
+    if not cloud_name:
+        return ""
+
+    if resource_type == "image" and width:
+        safe_width = max(200, min(int(width), 2400))
+        return f"https://res.cloudinary.com/{cloud_name}/image/upload/f_auto,q_auto,c_limit,w_{safe_width}/{public_id}"
+
+    return f"https://res.cloudinary.com/{cloud_name}/{resource_type}/upload/{public_id}"
+
+
+def _normalize_filename(name: str) -> str:
+    return unicodedata.normalize("NFKD", name or "").encode("ascii", "ignore").decode("ascii").lower().strip()
+
+
+RESUME_NAME_CANDIDATES = {
+    "pt": [
+        "Currículo - Giovani Amorim.pdf",
+        "Curriculo - Giovani Amorim.pdf",
+    ],
+    "en": [
+        "Giovani Amorim - Resume.pdf",
+        "Resume - Giovani Amorim.pdf",
+    ],
+}
 
 
 def delete_storage_files(storage_paths: list, db):
@@ -297,8 +325,51 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@api_router.get("/resume/{lang}")
+async def download_resume(lang: str, db: Session = Depends(get_db)):
+    candidates = RESUME_NAME_CANDIDATES.get((lang or "").lower())
+    if not candidates:
+        raise HTTPException(status_code=404, detail="Invalid resume language")
+
+    normalized_candidates = {_normalize_filename(name) for name in candidates}
+    db_files = (
+        db.query(FileModel)
+        .filter(FileModel.content_type == "application/pdf", FileModel.is_deleted == False)
+        .order_by(FileModel.created_at.desc())
+        .all()
+    )
+
+    matched_file = next(
+        (f for f in db_files if _normalize_filename(f.original_filename) in normalized_candidates),
+        None,
+    )
+
+    if not matched_file:
+        raise HTTPException(
+            status_code=404,
+            detail="Resume PDF not found. Upload the file in the admin with the expected name.",
+        )
+
+    if os.environ.get("CLOUDINARY_CLOUD_NAME"):
+        cloud_url = f"https://res.cloudinary.com/{os.environ['CLOUDINARY_CLOUD_NAME']}/raw/upload/fl_attachment/{matched_file.storage_path}"
+        return RedirectResponse(url=cloud_url)
+
+    full_path = UPLOADS_DIR / matched_file.storage_path
+    if not full_path.exists():
+        raise HTTPException(status_code=404, detail="Resume file not found")
+
+    with open(full_path, "rb") as f:
+        data = f.read()
+
+    return Response(
+        content=data,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{matched_file.original_filename}"'}
+    )
+
+
 @api_router.get("/files/{path:path}")
-async def download_file(path: str, db: Session = Depends(get_db)):
+async def download_file(path: str, w: Optional[int] = Query(None), db: Session = Depends(get_db)):
     """Download file from local storage"""
     try:
         full_path = UPLOADS_DIR / path
@@ -314,7 +385,7 @@ async def download_file(path: str, db: Session = Depends(get_db)):
                         resource_type = "raw"
                     else:
                         resource_type = "image"
-                    cloud_url = f"https://res.cloudinary.com/{os.environ['CLOUDINARY_CLOUD_NAME']}/{resource_type}/upload/{path}"
+                    cloud_url = _build_cloudinary_delivery_url(path, resource_type, w)
                     return RedirectResponse(url=cloud_url)
             raise HTTPException(status_code=404, detail="File not found")
         

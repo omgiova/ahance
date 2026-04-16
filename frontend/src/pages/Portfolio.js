@@ -20,8 +20,8 @@ const VIDEO_URL = 'https://customer-assets.emergentagent.com/job_behance-style/a
 const LOGO_URL = 'https://customer-assets.emergentagent.com/job_behance-style/artifacts/ccsqrvdt_EB%20Garamond%20%281%29.png';
 
 const RESUME_LINKS = {
-  pt: "https://drive.google.com/uc?export=download&id=1-kzlM4YnCEmWb3NHH0LHNjK0vnhMffJ_",
-  en: "https://drive.google.com/uc?export=download&id=1WjRa7ugBkUKbHrjEsXdMgjyuKpqnnVAl"
+  pt: `${API}/resume/pt`,
+  en: `${API}/resume/en`
 };
 
 export default function Portfolio() {
@@ -237,6 +237,10 @@ export default function Portfolio() {
               <div className="w-3 h-3 bg-[#e38e4d] rounded-full shrink-0" />
               <span>copywriting</span>
               <div className="w-3 h-3 bg-[#e38e4d] rounded-full shrink-0" />
+              <span>semiótica</span>
+              <div className="w-3 h-3 bg-[#e38e4d] rounded-full shrink-0" />
+              <span>revisão</span>
+              <div className="w-3 h-3 bg-[#e38e4d] rounded-full shrink-0" />
               <span>automação</span>
               <div className="w-3 h-3 bg-[#e38e4d] rounded-full shrink-0" />
               <span>conteúdo</span>
@@ -281,18 +285,26 @@ export default function Portfolio() {
             </span>
           </div>
           <h2 
-            className="text-5xl md:text-6xl font-normal text-black mb-8"
+            className="text-5xl md:text-3xl font-normal text-black mb-8"
             style={{ fontFamily: 'EB Garamond, serif' }}
           >
-            Giovani Amorim
+            Mas... quem é Giovani Amorim?
           </h2>
           <div className="space-y-6 text-xl text-black/80" style={{ fontFamily: 'EB Garamond, serif' }}>
             <p>
-              Com mais de 8 anos no cruzamento entre criatividade, estratégia e tecnologia, desenvolvo e executo campanhas que conectam marcas ao público certo por meio da minha escrita consistente e persuasiva e minha expertise em comunicação.
-
+              Desde 1995, respiro os ares tupiniquins.
             </p>
             <p>
-              Não me limito à redação/ao copywriting, sou um profissional estrategista e atuo com base em métricas de performance, benchmarking, qualidade das entregas e objetivos do cliente. Minha trajetória inclui direção criativa multissetorial com alto volume de entregas em agência de marketing 360 e startup proptech, com mais de 100 clientes atendidos e mais de 300 projetos entregues.
+              Desde 2009, sinto o marketing como vocação.
+            </p>
+            <p>
+              Desde 2017, vejo a área com respeito e profissionalismo, sem perder a empolgação, a essência e a motivação que me acompanham desde o início. Minha vibe hoje é construir mensagens autênticas, sejam elas com palavras ou não, que ecoam na memória do público.
+            </p>
+            <p>
+              Com mais de 8 anos no cruzamento entre criatividade, estratégia e tecnologia, desenvolvo e executo campanhas que conectam marcas às pessoas certas por meio do meu conhecimento teórico e minha expertise.
+            </p>
+            <p>
+              Não me limito à redação/ao copywriting, sou um profissional estrategista e atuo com base em métricas de performance, benchmarking, qualidade e objetivos do cliente. Minha trajetória inclui direção criativa multissetorial com alto volume de entregas em agência de marketing 360 e startup proptech, com mais de 100 clientes atendidos e mais de 300 projetos entregues.
             </p>
             <p>
               Ajudei a fundar e coordenar a comunicação de uma proptech que fez mais de R$ 60 milhões em VGV em menos de 3 anos.

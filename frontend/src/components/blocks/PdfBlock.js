@@ -10,17 +10,6 @@ import { toast } from 'sonner';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Converte URL do Google Drive para formato embeddable
-function toEmbeddableUrl(url) {
-  if (!url) return url;
-  const gd = url.match(/drive\.google\.com\/file\/d\/([^/?]+)/);
-  if (gd) return `https://drive.google.com/file/d/${gd[1]}/preview`;
-  return url;
-}
-
-function isGoogleDrive(url) {
-  return url && url.includes('drive.google.com');
-}
 
 export default function PdfBlock({ block, updateBlock }) {
   const [uploading, setUploading] = useState(false);
@@ -28,8 +17,8 @@ export default function PdfBlock({ block, updateBlock }) {
   const [externalUrl, setExternalUrl] = useState('');
   const fileInputRef = useRef(null);
 
-  const viewer = block.settings?.viewer || 'iframe';
   const height = block.settings?.height || '700';
+  const zoom = parseInt(block.settings?.zoom || '100', 10);
 
   const handleUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -63,12 +52,11 @@ export default function PdfBlock({ block, updateBlock }) {
 
   const handleExternalUrl = () => {
     if (!externalUrl.trim()) return;
-    const converted = toEmbeddableUrl(externalUrl.trim());
     updateBlock(block.id, {
       content: {
-        url: converted,
+        url: externalUrl.trim(),
         sourceType: 'url',
-        filename: isGoogleDrive(externalUrl) ? 'Google Drive' : 'Documento externo'
+        filename: 'Documento externo'
       }
     });
     toast.success('URL adicionada!');
@@ -83,19 +71,6 @@ export default function PdfBlock({ block, updateBlock }) {
       {/* Settings row */}
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-2">
-          <Label className="text-xs uppercase tracking-wider text-zinc-400">Visualizador</Label>
-          <Select value={viewer} onValueChange={(v) => updateSetting('viewer', v)}>
-            <SelectTrigger className="w-52 bg-black/20 border-white/10 text-zinc-50">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-zinc-950/90 backdrop-blur-xl border-white/10 text-zinc-100">
-              <SelectItem value="iframe">iframe (navegador nativo)</SelectItem>
-              <SelectItem value="pdfjs">Google Docs Viewer</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex items-center gap-2">
           <Label className="text-xs uppercase tracking-wider text-zinc-400">Altura</Label>
           <Select value={height} onValueChange={(v) => updateSetting('height', v)}>
             <SelectTrigger className="w-32 bg-black/20 border-white/10 text-zinc-50">
@@ -109,7 +84,34 @@ export default function PdfBlock({ block, updateBlock }) {
             </SelectContent>
           </Select>
         </div>
+
+        <div className="flex items-center gap-2">
+          <Label className="text-xs uppercase tracking-wider text-zinc-400">Zoom inicial</Label>
+          <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/20 px-2 py-1">
+            <button
+              type="button"
+              onClick={() => updateSetting('zoom', String(Math.max(50, zoom - 10)))}
+              className="w-7 h-7 rounded-md hover:bg-white/10 text-zinc-100"
+            >
+              -
+            </button>
+            <span className="min-w-[52px] text-center text-sm text-zinc-100">
+              {zoom}%
+            </span>
+            <button
+              type="button"
+              onClick={() => updateSetting('zoom', String(Math.min(200, zoom + 10)))}
+              className="w-7 h-7 rounded-md hover:bg-white/10 text-zinc-100"
+            >
+              +
+            </button>
+          </div>
+        </div>
       </div>
+
+      <p className="text-xs text-zinc-500">
+        O PDF agora usa apenas a renderização limpa, com zoom inicial configurável.
+      </p>
 
       {/* Source */}
       {!block.content?.url ? (
@@ -160,7 +162,7 @@ export default function PdfBlock({ block, updateBlock }) {
                 value={externalUrl}
                 onChange={(e) => setExternalUrl(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleExternalUrl()}
-                placeholder="https://drive.google.com/... ou URL direta do PDF"
+                placeholder="Cole uma URL direta de PDF"
                 className="bg-black/20 border-white/10 text-zinc-50"
               />
               <Button onClick={handleExternalUrl} className="bg-amber-500 text-zinc-950 hover:bg-amber-400">

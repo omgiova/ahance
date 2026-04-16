@@ -1,20 +1,164 @@
-import { useState } from 'react';
+import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, ZoomIn, ZoomOut } from 'lucide-react';
 import ReactPlayer from 'react-player';
+import { Document, Page, pdfjs } from 'react-pdf';
+import LazyLoadWrapper from '@/components/LazyLoadWrapper';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-function getMediaUrl(path) {
-  if (!path) return null;
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  return `${API}/files/${path}`;
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;
+
+function buildCloudinaryOptimizedUrl(url, width = 1600) {
+  if (!url || !url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
+  if (url.includes('/f_auto,q_auto') || /\/w_\d+[,/]/.test(url)) return url;
+
+  const safeWidth = Math.max(200, Math.min(Number(width) || 1600, 2400));
+  return url.replace('/upload/', `/upload/f_auto,q_auto,c_limit,w_${safeWidth}/`);
 }
+
+function getMediaUrl(path, options = {}) {
+  if (!path) return null;
+
+  const { optimize = false, width = 1600 } = options;
+  const safeWidth = Math.max(200, Math.min(Number(width) || 1600, 2400));
+
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return optimize ? buildCloudinaryOptimizedUrl(path, safeWidth) : path;
+  }
+
+  const query = optimize ? `?w=${safeWidth}` : '';
+  return `${API}/files/${path}${query}`;
+}
+
+function detectMediaType(item = {}) {
+  const rawType = String(item.type || item.contentType || item.mimeType || '').toLowerCase();
+  const rawName = String(item.filename || item.name || item.url || '').toLowerCase();
+
+  if (rawType === 'gdrive') return 'gdrive';
+  if (rawType === 'pdf' || rawType.includes('pdf') || /\.pdf($|\?)/i.test(rawName)) return 'pdf';
+  if (
+    rawType === 'video' ||
+    rawType.startsWith('video/') ||
+    /youtube|youtu\.be|vimeo|drive\.google\.com/i.test(rawName)
+  ) {
+    return rawName.includes('drive.google.com') ? 'gdrive' : 'video';
+  }
+  return 'image';
+}
+
+export const PdfCanvasViewer = memo(function PdfCanvasViewer({ url, height, initialZoom = 100, showControls = true }) {
+  const wrapperRef = useRef(null);
+  const [numPages, setNumPages] = useState(0);
+  const [pageWidth, setPageWidth] = useState(800);
+  const [zoom, setZoom] = useState((initialZoom || 100) / 100);
+  const [isPdfReady, setIsPdfReady] = useState(false);
+
+  useEffect(() => {
+    setZoom((initialZoom || 100) / 100);
+  }, [initialZoom]);
+
+  useEffect(() => {
+    setNumPages(0);
+    setIsPdfReady(false);
+  }, [url]);
+
+  useLayoutEffect(() => {
+    const updateWidth = () => {
+      const width = wrapperRef.current?.clientWidth || 800;
+      const nextWidth = Math.max(280, Math.min(width, 1000));
+      setPageWidth((current) => (Math.abs(current - nextWidth) > 2 ? nextWidth : current));
+    };
+
+    updateWidth();
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(() => {
+        requestAnimationFrame(updateWidth);
+      });
+      if (wrapperRef.current) observer.observe(wrapperRef.current);
+      return () => observer.disconnect();
+    }
+
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
+
+  return (
+    <div className="w-full bg-transparent">
+      {showControls && (
+        <div className="flex items-center justify-end gap-2 mb-3">
+          <button
+            onClick={() => setZoom((z) => Math.max(0.6, z - 0.1))}
+            className="px-2.5 py-1.5 rounded-md border border-black/10 hover:bg-black/5 text-black/70"
+            title="Diminuir zoom"
+          >
+            <ZoomOut className="w-4 h-4" />
+          </button>
+          <span className="text-sm text-black/60 min-w-[52px] text-center">
+            {Math.round(zoom * 100)}%
+          </span>
+          <button
+            onClick={() => setZoom((z) => Math.min(2.5, z + 0.1))}
+            className="px-2.5 py-1.5 rounded-md border border-black/10 hover:bg-black/5 text-black/70"
+            title="Aumentar zoom"
+          >
+            <ZoomIn className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      <div ref={wrapperRef} className="relative w-full overflow-auto bg-transparent" style={{ maxHeight: `${height}px` }}>
+        {!isPdfReady && (
+          <div className="absolute inset-0 z-10 bg-transparent" />
+        )}
+
+        <div className={`transition-opacity duration-300 ${isPdfReady ? 'opacity-100' : 'opacity-0'}`}>
+          <Document
+            file={url}
+            onLoadSuccess={({ numPages: totalPages }) => setNumPages(totalPages)}
+            loading={null}
+            error={<div className="py-8 text-center text-black/50" />}
+            className="flex flex-col items-center gap-6"
+          >
+            {Array.from({ length: numPages }, (_, index) => (
+              <div key={`pdf-page-${index + 1}`} className="bg-white shadow-sm overflow-hidden">
+                <Page
+                  pageNumber={index + 1}
+                  width={pageWidth * zoom}
+                  renderAnnotationLayer={false}
+                  renderTextLayer={false}
+                  canvasBackground="#ffffff"
+                  className="bg-white"
+                  onRenderSuccess={() => {
+                    if (index === 0) setIsPdfReady(true);
+                  }}
+                />
+              </div>
+            ))}
+          </Document>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 export default function BlockRenderer({ block }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [expandedImage, setExpandedImage] = useState(null);
+  const [cachedPdfUrls, setCachedPdfUrls] = useState([]);
+
+  useEffect(() => {
+    if (block.type !== 'carousel') return;
+
+    const items = block.content.items || (block.content.images || []).map(img => ({ type: 'image', url: img }));
+    const currentItem = items[currentIndex];
+
+    if (currentItem && detectMediaType(currentItem) === 'pdf' && currentItem.url) {
+      setCachedPdfUrls((prev) => (prev.includes(currentItem.url) ? prev : [...prev, currentItem.url]));
+    }
+  }, [block, currentIndex]);
 
   const renderBlock = () => {
     switch (block.type) {
@@ -51,13 +195,15 @@ export default function BlockRenderer({ block }) {
       case 'image':
         if (!block.content.image) return null;
         const imageWidth = block.settings?.width || '100';
-        const fullImageUrl = getMediaUrl(block.content.image);
+        const fullImageUrl = getMediaUrl(block.content.image, { optimize: true, width: 1600 });
         return (
           <div className="flex justify-center">
             <div style={{ width: `${imageWidth}%` }}>
               <img
                 src={fullImageUrl}
                 alt={block.content.filename || 'Project image'}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-auto"
                 onClick={() => setExpandedImage(fullImageUrl)}
               />
@@ -74,12 +220,14 @@ export default function BlockRenderer({ block }) {
             style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
           >
             {block.content.images.map((image, index) => {
-              const gridImgUrl = getMediaUrl(image);
+              const gridImgUrl = getMediaUrl(image, { optimize: true, width: 1200 });
               return (
                 <div key={index} className="overflow-hidden">
                   <img
                     src={gridImgUrl}
                     alt={`Grid image ${index + 1}`}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                     onClick={() => setExpandedImage(gridImgUrl)}
                   />
@@ -94,46 +242,69 @@ export default function BlockRenderer({ block }) {
         if (carouselItems.length === 0) return null;
         
         const renderCarouselItem = (item, index) => {
-          if (item.type === 'gdrive') {
+          const mediaType = detectMediaType(item);
+
+          if (mediaType === 'gdrive') {
             const ratioMap = { landscape: '56.25%', portrait: '177.78%', square: '100%' };
             const paddingTop = ratioMap[item.orientation] || '56.25%';
             const width = item.orientation === 'portrait' ? '394px' : '100%';
             return (
-              <div className="w-full h-full flex items-center justify-center">
-                <div style={{ position: 'relative', paddingTop, width, maxWidth: '100%' }}>
-                  <iframe
-                    src={item.url}
-                    allow="autoplay; fullscreen; picture-in-picture"
-                    allowFullScreen
-                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                  />
+              <LazyLoadWrapper className="w-full h-full flex items-center justify-center" minHeight={420}>
+                <div className="w-full h-full flex items-center justify-center">
+                  <div style={{ position: 'relative', paddingTop, width, maxWidth: '100%' }}>
+                    <iframe
+                      src={item.url}
+                      loading="lazy"
+                      allow="autoplay; fullscreen; picture-in-picture"
+                      allowFullScreen
+                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                    />
+                  </div>
                 </div>
-              </div>
+              </LazyLoadWrapper>
             );
           }
 
-          const fullUrl = item.sourceType === 'url' ? item.url : getMediaUrl(item.url);
+          const fullUrl = mediaType === 'image'
+            ? getMediaUrl(item.url, { optimize: true, width: 1600 })
+            : getMediaUrl(item.url);
 
-          if (item.type === 'video') {
+          if (mediaType === 'video') {
             return (
-              <div className="w-full h-full flex items-center justify-center">
-                {item.sourceType === 'url' ? (
-                  <div className="w-full h-full">
-                    <ReactPlayer 
-                      url={fullUrl} 
-                      width="100%" 
-                      height="100%" 
+              <LazyLoadWrapper className="w-full h-full flex items-center justify-center" minHeight={420}>
+                <div className="w-full h-full flex items-center justify-center">
+                  {item.sourceType === 'url' ? (
+                    <div className="w-full h-full">
+                      <ReactPlayer 
+                        url={fullUrl} 
+                        width="100%" 
+                        height="100%" 
+                        controls 
+                      />
+                    </div>
+                  ) : (
+                    <video 
+                      src={fullUrl} 
                       controls 
+                      preload="metadata"
+                      className="max-w-full max-h-full object-contain"
                     />
-                  </div>
-                ) : (
-                  <video 
-                    src={fullUrl} 
-                    controls 
-                    className="max-w-full max-h-full object-contain"
-                  />
-                )}
-              </div>
+                  )}
+                </div>
+              </LazyLoadWrapper>
+            );
+          }
+
+          if (mediaType === 'pdf') {
+            return (
+              <LazyLoadWrapper className="w-full h-full overflow-auto bg-transparent px-4 py-2" minHeight={620}>
+                <PdfCanvasViewer
+                  url={fullUrl}
+                  height={620}
+                  initialZoom={parseInt(item.zoom || '100', 10)}
+                  showControls={true}
+                />
+              </LazyLoadWrapper>
             );
           }
 
@@ -141,6 +312,8 @@ export default function BlockRenderer({ block }) {
             <img
               src={fullUrl}
               alt={`Slide ${index + 1}`}
+              loading="lazy"
+              decoding="async"
               className="max-w-full max-h-full object-contain"
               onClick={() => setExpandedImage(fullUrl)}
             />
@@ -149,8 +322,24 @@ export default function BlockRenderer({ block }) {
 
         return (
           <div className="relative w-full flex flex-col items-center">
-            <div className="relative w-full bg-transparent overflow-hidden flex items-center justify-center" style={{ height: '700px', maxHeight: 'calc(100vh - 100px)' }}>
-              {renderCarouselItem(carouselItems[currentIndex], currentIndex)}
+            <div className="relative w-full bg-transparent overflow-hidden" style={{ height: '700px', maxHeight: 'calc(100vh - 100px)' }}>
+              {carouselItems.map((item, index) => {
+                const mediaType = detectMediaType(item);
+                const shouldKeepMounted = index === currentIndex || (mediaType === 'pdf' && cachedPdfUrls.includes(item.url));
+
+                if (!shouldKeepMounted) return null;
+
+                return (
+                  <div
+                    key={`${item.url || 'item'}-${index}`}
+                    className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${
+                      index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'
+                    }`}
+                  >
+                    {renderCarouselItem(item, index)}
+                  </div>
+                );
+              })}
               
               {carouselItems.length > 1 && (
                 <>
@@ -195,74 +384,80 @@ export default function BlockRenderer({ block }) {
 
         return (
           <div
-            className="relative w-full bg-transparent overflow-hidden flex items-center justify-center"
+            className="relative w-full bg-transparent overflow-hidden"
             style={{ height: '700px', maxHeight: 'calc(100vh - 100px)' }}
           >
-            {block.content.type === 'gdrive' ? (() => {
-              const ratioMap = { landscape: '56.25%', portrait: '177.78%', square: '100%' };
-              const isPortrait = block.content.orientation === 'portrait';
-              const isSquare = block.content.orientation === 'square';
-              return (
+            <LazyLoadWrapper className="w-full h-full flex items-center justify-center" minHeight={520}>
+              {block.content.type === 'gdrive' ? (() => {
+                const ratioMap = { landscape: '56.25%', portrait: '177.78%', square: '100%' };
+                const isPortrait = block.content.orientation === 'portrait';
+                const isSquare = block.content.orientation === 'square';
+                return (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div
+                      style={{
+                        position: 'relative',
+                        width: isPortrait ? '394px' : '100%',
+                        maxWidth: '100%',
+                        paddingTop: isPortrait ? '177.78%' : isSquare ? '100%' : '56.25%',
+                      }}
+                    >
+                      <iframe
+                        src={videoSrc}
+                        loading="lazy"
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowFullScreen
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                      />
+                    </div>
+                  </div>
+                );
+              })() : block.content.type === 'url' ? (
                 <div className="w-full h-full flex items-center justify-center">
-                  <div
-                    style={{
-                      position: 'relative',
-                      width: isPortrait ? '394px' : '100%',
-                      maxWidth: '100%',
-                      paddingTop: isPortrait ? '177.78%' : isSquare ? '100%' : '56.25%',
-                    }}
-                  >
-                    <iframe
-                      src={videoSrc}
-                      allow="autoplay; fullscreen; picture-in-picture"
-                      allowFullScreen
-                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                  <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }}>
+                    <ReactPlayer
+                      url={videoSrc}
+                      controls
+                      width="100%"
+                      height="100%"
+                      style={{ position: 'absolute', top: 0, left: 0 }}
+                      config={{
+                        youtube: {
+                          playerVars: { showinfo: 1 }
+                        },
+                        vimeo: {
+                          playerOptions: { responsive: true }
+                        }
+                      }}
                     />
                   </div>
                 </div>
-              );
-            })() : block.content.type === 'url' ? (
-              <div className="w-full h-full flex items-center justify-center">
-                <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }}>
-                  <ReactPlayer
-                    url={videoSrc}
-                    controls
-                    width="100%"
-                    height="100%"
-                    style={{ position: 'absolute', top: 0, left: 0 }}
-                    config={{
-                      youtube: {
-                        playerVars: { showinfo: 1 }
-                      },
-                      vimeo: {
-                        playerOptions: { responsive: true }
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-            ) : (
-              <video
-                src={videoSrc}
-                controls
-                className="max-w-full max-h-full object-contain"
-              />
-            )}
+              ) : (
+                <video
+                  src={videoSrc}
+                  controls
+                  preload="metadata"
+                  className="max-w-full max-h-full object-contain"
+                />
+              )}
+            </LazyLoadWrapper>
           </div>
         );
 
       case 'embed':
         if (!block.content.url) return null;
         return (
-          <div className="relative bg-black">
-            <ReactPlayer
-              url={block.content.url}
-              controls
-              width="100%"
-              height="auto"
-              style={{ aspectRatio: '16/9' }}
-            />
-          </div>
+          <LazyLoadWrapper minHeight={260}>
+            <div className="relative bg-black">
+              <ReactPlayer
+                url={block.content.url}
+                controls
+                width="100%"
+                height="auto"
+                style={{ aspectRatio: '16/9' }}
+              />
+            </div>
+          </LazyLoadWrapper>
         );
 
       case 'separator':
@@ -289,28 +484,14 @@ export default function BlockRenderer({ block }) {
         if (!pdfUrl) return null;
         const pdfHeight = parseInt(block.settings?.height || '700', 10);
 
-        // Normaliza Google Drive para preview embeddable
-        const gdMatch = pdfUrl.match(/drive\.google\.com\/file\/d\/([^/?]+)/);
-        const isGoogleDrivePreview = pdfUrl.includes('drive.google.com') && pdfUrl.includes('/preview');
-        const normalizedUrl = gdMatch
-          ? `https://drive.google.com/file/d/${gdMatch[1]}/preview`
-          : pdfUrl;
-
-        // Usa Google Docs Viewer sempre, exceto se já for um Google Drive /preview
-        // (evita download de arquivos Cloudinary raw/upload sem content-type inline)
-        const iframeSrc = isGoogleDrivePreview
-          ? normalizedUrl
-          : `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(normalizedUrl)}`;
-
         return (
-          <iframe
-            src={iframeSrc}
-            width="100%"
-            height={`${pdfHeight}px`}
-            title={block.content?.filename || 'PDF'}
-            loading="lazy"
-            style={{ border: 'none', display: 'block' }}
-          />
+          <LazyLoadWrapper minHeight={pdfHeight}>
+            <PdfCanvasViewer
+              url={pdfUrl}
+              height={pdfHeight}
+              initialZoom={parseInt(block.settings?.zoom || '100', 10)}
+            />
+          </LazyLoadWrapper>
         );
       }
 

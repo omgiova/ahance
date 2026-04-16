@@ -1,10 +1,11 @@
-import { useState, useRef } from 'react';
-import { Upload, X, ChevronLeft, ChevronRight, Link as LinkIcon, GripVertical, Video } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { Upload, X, ChevronLeft, ChevronRight, Link as LinkIcon, Video, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import axios from 'axios';
 import { toast } from 'sonner';
 import ReactPlayer from 'react-player';
+import { PdfCanvasViewer } from '@/components/BlockRenderer';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -15,6 +16,7 @@ export default function CarouselBlock({ block, updateBlock }) {
   const [videoUrl, setVideoUrl] = useState('');
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [dragSrcIndex, setDragSrcIndex] = useState(null);
+  const [cachedPdfUrls, setCachedPdfUrls] = useState([]);
   const fileInputRef = useRef(null);
 
   const parseGoogleDriveUrl = (raw) => {
@@ -29,8 +31,34 @@ export default function CarouselBlock({ block, updateBlock }) {
     return null;
   };
 
+  const detectMediaType = (item = {}) => {
+    const rawType = String(item.type || item.contentType || item.mimeType || '').toLowerCase();
+    const rawName = String(item.filename || item.name || item.url || '').toLowerCase();
+
+    if (rawType === 'gdrive') return 'gdrive';
+    if (rawType === 'pdf' || rawType.includes('pdf') || /\.pdf($|\?)/i.test(rawName)) return 'pdf';
+    if (
+      rawType === 'video' ||
+      rawType.startsWith('video/') ||
+      /youtube|youtu\.be|vimeo|drive\.google\.com/i.test(rawName)
+    ) {
+      return rawName.includes('drive.google.com') ? 'gdrive' : 'video';
+    }
+    return 'image';
+  };
+
   // Normaliza itens para suportar tanto o formato antigo (apenas imagens) quanto o novo (mídia mista)
-  const items = block.content.items || (block.content.images || []).map(img => ({ type: 'image', url: img }));
+  const items = (block.content.items || (block.content.images || []).map(img => ({ type: 'image', url: img })))
+    .map(item => ({ ...item, type: detectMediaType(item) }));
+
+  useEffect(() => {
+    const currentItem = items[currentIndex];
+    if (!currentItem) return;
+
+    if (detectMediaType(currentItem) === 'pdf' && currentItem.url) {
+      setCachedPdfUrls((prev) => (prev.includes(currentItem.url) ? prev : [...prev, currentItem.url]));
+    }
+  }, [items, currentIndex]);
 
   const handleUpload = async (e) => {
     const files = Array.from(e.target.files || []);
@@ -46,9 +74,16 @@ export default function CarouselBlock({ block, updateBlock }) {
         });
         
         return {
-          type: file.type.startsWith('video/') ? 'video' : 'image',
+          type: detectMediaType({
+            type: file.type,
+            filename: response.data.original_filename || file.name,
+            url: response.data.storage_path
+          }),
           url: response.data.storage_path,
-          sourceType: 'upload'
+          sourceType: 'upload',
+          filename: response.data.original_filename || file.name,
+          contentType: response.data.content_type || file.type,
+          zoom: 100
         };
       });
 
@@ -74,10 +109,21 @@ export default function CarouselBlock({ block, updateBlock }) {
   const handleAddUrl = () => {
     if (!videoUrl.trim()) return;
 
-    const gdriveEmbed = parseGoogleDriveUrl(videoUrl.trim());
-    const newItem = gdriveEmbed
-      ? { type: 'gdrive', url: gdriveEmbed, sourceType: 'url', orientation: 'landscape' }
-      : { type: 'video', url: videoUrl.trim(), sourceType: 'url' };
+    const rawUrl = videoUrl.trim();
+    const gdriveEmbed = parseGoogleDriveUrl(rawUrl);
+    const isPdfUrl = /\.pdf($|\?)/i.test(rawUrl);
+    const newItem = isPdfUrl
+      ? {
+          type: detectMediaType({ type: 'pdf', url: rawUrl, filename: 'PDF externo' }),
+          url: rawUrl,
+          sourceType: 'url',
+          filename: 'PDF externo',
+          contentType: 'application/pdf',
+          zoom: 100
+        }
+      : gdriveEmbed
+        ? { type: 'gdrive', url: gdriveEmbed, sourceType: 'url', orientation: 'landscape' }
+        : { type: 'video', url: rawUrl, sourceType: 'url' };
 
     updateBlock(block.id, {
       content: {
@@ -89,7 +135,7 @@ export default function CarouselBlock({ block, updateBlock }) {
 
     setVideoUrl('');
     setShowUrlInput(false);
-    toast.success(gdriveEmbed ? 'Vídeo do Google Drive adicionado!' : 'Vídeo adicionado via URL!');
+    toast.success(isPdfUrl ? 'PDF adicionado via URL!' : gdriveEmbed ? 'Vídeo do Google Drive adicionado!' : 'Vídeo adicionado via URL!');
   };
 
   const removeItem = (index) => {
@@ -147,17 +193,20 @@ export default function CarouselBlock({ block, updateBlock }) {
   };
 
   const getThumbnailUrl = (item) => {
-    if (item.type === 'image' && item.url) {
-      return item.sourceType === 'url' ? item.url : `${API}/files/${item.url}`;
+    if (detectMediaType(item) === 'image' && item.url) {
+      return item.url.startsWith('http://') || item.url.startsWith('https://')
+        ? item.url
+        : `${API}/files/${item.url}`;
     }
     return null;
   };
 
-  const renderCurrentItem = () => {
-    const item = items[currentIndex];
+  const renderCarouselItem = (item, index) => {
     if (!item) return null;
 
-    if (item.type === 'gdrive') {
+    const mediaType = detectMediaType(item);
+
+    if (mediaType === 'gdrive') {
       const ratioMap = { landscape: '56.25%', portrait: '177.78%', square: '100%' };
       const paddingTop = ratioMap[item.orientation] || '56.25%';
       const width = item.orientation === 'portrait' ? '338px' : '100%';
@@ -175,9 +224,11 @@ export default function CarouselBlock({ block, updateBlock }) {
       );
     }
 
-    const fullUrl = item.sourceType === 'url' ? item.url : `${API}/files/${item.url}`;
+    const fullUrl = item.url?.startsWith('http://') || item.url?.startsWith('https://')
+      ? item.url
+      : `${API}/files/${item.url}`;
 
-    if (item.type === 'video') {
+    if (mediaType === 'video') {
       return (
         <div className="w-full h-full flex items-center justify-center">
           {item.sourceType === 'url' ? (
@@ -189,10 +240,23 @@ export default function CarouselBlock({ block, updateBlock }) {
       );
     }
 
+    if (mediaType === 'pdf') {
+      return (
+        <div className="w-full h-full bg-transparent overflow-auto p-3">
+          <PdfCanvasViewer
+            url={fullUrl}
+            height={520}
+            initialZoom={parseInt(item.zoom || '100', 10)}
+            showControls={true}
+          />
+        </div>
+      );
+    }
+
     return (
       <img
         src={fullUrl}
-        alt={`Slide ${currentIndex + 1}`}
+        alt={`Slide ${index + 1}`}
         className="max-w-full max-h-full object-contain"
       />
     );
@@ -217,12 +281,12 @@ export default function CarouselBlock({ block, updateBlock }) {
           className="border-white/10 text-zinc-400 hover:text-zinc-50"
         >
           <LinkIcon className="w-4 h-4 mr-2" />
-          URL Vídeo
+          URL Mídia
         </Button>
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*,video/*"
+          accept="image/*,video/*,application/pdf"
           multiple
           onChange={handleUpload}
           className="hidden"
@@ -234,7 +298,7 @@ export default function CarouselBlock({ block, updateBlock }) {
           <Input
             value={videoUrl}
             onChange={(e) => setVideoUrl(e.target.value)}
-            placeholder="Cole o link do YouTube, Vimeo, Google Drive..."
+            placeholder="Cole o link do YouTube, Vimeo, Google Drive ou de um PDF..."
             className="h-8 bg-black/40 border-white/10"
           />
           <Button size="sm" onClick={handleAddUrl} className="bg-amber-500 text-zinc-950">
@@ -246,8 +310,24 @@ export default function CarouselBlock({ block, updateBlock }) {
       {items.length > 0 ? (
         <>
         <div className="relative rounded-2xl overflow-hidden bg-black/20 group">
-          <div className="relative h-[600px] flex items-center justify-center">
-            {renderCurrentItem()}
+          <div className="relative h-[600px]">
+            {items.map((item, index) => {
+              const mediaType = detectMediaType(item);
+              const shouldKeepMounted = index === currentIndex || (mediaType === 'pdf' && cachedPdfUrls.includes(item.url));
+
+              if (!shouldKeepMounted) return null;
+
+              return (
+                <div
+                  key={`${item.url || 'item'}-${index}`}
+                  className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${
+                    index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'
+                  }`}
+                >
+                  {renderCarouselItem(item, index)}
+                </div>
+              );
+            })}
             <button
               onClick={() => removeItem(currentIndex)}
               className="absolute top-4 right-4 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 transition-colors opacity-0 group-hover:opacity-100 z-10"
@@ -341,7 +421,11 @@ export default function CarouselBlock({ block, updateBlock }) {
                     <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-                      <Video className="w-5 h-5 text-zinc-400" />
+                      {detectMediaType(item) === 'pdf' ? (
+                        <FileText className="w-5 h-5 text-zinc-300" />
+                      ) : (
+                        <Video className="w-5 h-5 text-zinc-400" />
+                      )}
                     </div>
                   )}
                   <span className="absolute bottom-0.5 right-1 text-[10px] text-white/60 leading-none">
