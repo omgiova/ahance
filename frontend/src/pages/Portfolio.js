@@ -409,7 +409,7 @@ export default function Portfolio() {
                   className="text-lg text-black/60"
                   style={{ fontFamily: 'EB Garamond, serif' }}
                 >
-                  Nenhum projeto publicado ainda.
+                  .
                 </p>
               </div>
             ) : (

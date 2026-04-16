@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Edit, Trash2, Eye, ArrowLeft, Search, ArrowUp } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, ArrowLeft, Search, ArrowUp, Save, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -8,6 +8,12 @@ import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+const ORDER_SAVE_PREFIX = 'admin-project-order-save-slot-';
+const SAVE_SLOT_STYLES = {
+  1: { bg: '#f6dfcf', text: '#674011', border: '#edb78e' },
+  2: { bg: '#e38e4d', text: '#ffffff', border: '#a5672f' },
+  3: { bg: '#674011', text: '#ffffff', border: '#a5672f' },
+};
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -16,10 +22,28 @@ export default function AdminDashboard() {
   const [draggedId, setDraggedId] = useState(null);
   const [dropIndex, setDropIndex] = useState(null);
   const [search, setSearch] = useState('');
+  const [savedOrders, setSavedOrders] = useState({ 1: null, 2: null, 3: null });
 
   useEffect(() => {
     fetchProjects();
+    loadSavedOrders();
   }, []);
+
+  const loadSavedOrders = () => {
+    const nextSavedOrders = { 1: null, 2: null, 3: null };
+
+    [1, 2, 3].forEach((slot) => {
+      try {
+        const raw = localStorage.getItem(`${ORDER_SAVE_PREFIX}${slot}`);
+        nextSavedOrders[slot] = raw ? JSON.parse(raw) : null;
+      } catch (error) {
+        console.warn(`Não foi possível ler o SAVE ${slot}:`, error);
+        nextSavedOrders[slot] = null;
+      }
+    });
+
+    setSavedOrders(nextSavedOrders);
+  };
 
   const fetchProjects = async () => {
     try {
@@ -31,6 +55,53 @@ export default function AdminDashboard() {
       toast.error('Erro ao carregar projetos');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const persistProjectOrder = async (orderedProjects, successMessage) => {
+    setProjects(orderedProjects);
+
+    try {
+      await axios.put(`${API}/projects/reorder`, {
+        project_ids: orderedProjects.map((p) => p.id)
+      });
+      if (successMessage) toast.success(successMessage);
+      return true;
+    } catch (error) {
+      console.error('Reorder error:', error);
+      toast.error('Erro ao reordenar');
+      fetchProjects();
+      return false;
+    }
+  };
+
+  const handleSaveSlot = (slot) => {
+    const payload = {
+      ids: projects.map((p) => p.id),
+      savedAt: new Date().toISOString(),
+    };
+
+    localStorage.setItem(`${ORDER_SAVE_PREFIX}${slot}`, JSON.stringify(payload));
+    loadSavedOrders();
+    toast.success(`SAVE ${slot} salvo!`);
+  };
+
+  const handleRestoreSlot = async (slot) => {
+    const saved = savedOrders[slot];
+    if (!saved?.ids?.length) {
+      toast.error(`SAVE ${slot} ainda está vazio.`);
+      return;
+    }
+
+    const savedIdSet = new Set(saved.ids);
+    const restoredProjects = [
+      ...saved.ids.map((id) => projects.find((p) => p.id === id)).filter(Boolean),
+      ...projects.filter((p) => !savedIdSet.has(p.id))
+    ];
+
+    const ok = await persistProjectOrder(restoredProjects, `SAVE ${slot} restaurado!`);
+    if (ok) {
+      loadSavedOrders();
     }
   };
 
@@ -79,19 +150,10 @@ export default function AdminDashboard() {
     }
     newProjects.splice(targetIndex, 0, projects[draggedIndex]);
 
-    setProjects(newProjects);
     setDraggedId(null);
     setDropIndex(null);
 
-    try {
-      const projectIds = newProjects.map(p => p.id);
-      await axios.put(`${API}/projects/reorder`, { project_ids: projectIds });
-      toast.success('Ordem atualizada!');
-    } catch (error) {
-      console.error('Reorder error:', error);
-      toast.error('Erro ao reordenar');
-      fetchProjects();
-    }
+    await persistProjectOrder(newProjects, 'Ordem atualizada!');
   };
 
   const handleDragEnd = () => {
@@ -127,17 +189,8 @@ export default function AdminDashboard() {
       ...projects.filter((p) => p.id !== projectId)
     ];
 
-    setProjects(reorderedProjects);
-
-    try {
-      await axios.put(`${API}/projects/reorder`, {
-        project_ids: reorderedProjects.map((p) => p.id)
-      });
-      toast.success('Projeto enviado ao topo!');
-      fetchProjects();
-    } catch (error) {
-      console.error('Send to top error:', error);
-      toast.error('Erro ao enviar projeto ao topo');
+    const ok = await persistProjectOrder(reorderedProjects, 'Projeto enviado ao topo!');
+    if (ok) {
       fetchProjects();
     }
   };
@@ -204,17 +257,67 @@ export default function AdminDashboard() {
           >
             Total de projetos: {projects.length}
           </p>
-          {/* Search */}
-          <div className="relative mt-4 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/40" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Filtrar por nome..."
-              className="w-full pl-9 pr-4 py-2 text-sm bg-white border border-black/10 rounded-full text-black placeholder:text-black/40 focus:outline-none focus:border-[#e38e4d] transition-colors"
-              style={{ fontFamily: 'EB Garamond, serif' }}
-            />
+          <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative w-full max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black/40" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Filtrar por nome..."
+                className="w-full h-11 pl-9 pr-4 text-sm bg-white border border-black/10 rounded-full text-black placeholder:text-black/40 focus:outline-none focus:border-[#e38e4d] transition-colors"
+                style={{ fontFamily: 'EB Garamond, serif' }}
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-2 lg:justify-end">
+              {[1, 2, 3].map((slot) => {
+                const slotStyle = SAVE_SLOT_STYLES[slot];
+
+                return (
+                  <div
+                    key={slot}
+                    className="flex items-center gap-1 border rounded-full px-2 py-1 h-11"
+                    style={{
+                      backgroundColor: slotStyle.bg,
+                      color: slotStyle.text,
+                      borderColor: slotStyle.border,
+                    }}
+                  >
+                    <span
+                      className="text-sm px-2"
+                      style={{ fontFamily: 'EB Garamond, serif', color: slotStyle.text }}
+                    >
+                      SAVE {slot}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleSaveSlot(slot)}
+                      className="h-8 w-8 p-0 rounded-full hover:bg-black/10"
+                      style={{ color: slotStyle.text }}
+                      title={`Salvar SAVE ${slot}`}
+                      aria-label={`Salvar SAVE ${slot}`}
+                    >
+                      <Save className="w-4 h-4" />
+                    </Button>
+                    <span style={{ color: slotStyle.text, opacity: 0.35 }}>|</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleRestoreSlot(slot)}
+                      disabled={!savedOrders[slot]?.ids?.length}
+                      className="h-8 w-8 p-0 rounded-full hover:bg-black/10 disabled:opacity-30"
+                      style={{ color: slotStyle.text }}
+                      title={`Restaurar SAVE ${slot}`}
+                      aria-label={`Restaurar SAVE ${slot}`}
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
