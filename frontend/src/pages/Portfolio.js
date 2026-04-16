@@ -156,11 +156,10 @@ export default function Portfolio() {
               <div className="relative flex-1 md:flex-none flex justify-end">
                 <button
                   onClick={() => setShowResumeDropdown(!showResumeDropdown)}
-                  className="text-[15px] md:text-base text-black/70 hover:text-black transition-colors flex items-center gap-1"
+                  className="text-[15px] md:text-base text-black/70 hover:text-black transition-colors"
                   style={{ fontFamily: 'EB Garamond, serif' }}
                 >
                   CURRÍCULO
-                  <ChevronDown className="w-4 h-4" />
                 </button>
                 {showResumeDropdown && (
                   <motion.div
@@ -249,11 +248,10 @@ export default function Portfolio() {
               <div>
                 <button
                   onClick={() => setShowResumeDropdown(!showResumeDropdown)}
-                  className="w-full flex items-center justify-between py-1 text-[15px] uppercase text-black/70 hover:text-black transition-colors"
+                  className="w-full text-left py-1 text-[15px] uppercase text-black/70 hover:text-black transition-colors"
                   style={{ fontFamily: 'EB Garamond, serif' }}
                 >
                   <span>CURRÍCULO</span>
-                  <ChevronDown className="w-4 h-4" />
                 </button>
                 {showResumeDropdown && (
                   <div className="mt-2 flex flex-col gap-2 pl-1 bg-[#fffeec]">
