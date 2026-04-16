@@ -100,7 +100,8 @@ export default function CarouselBlock({ block, updateBlock }) {
       toast.success(`${files.length} item(ns) enviado(s)!`);
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Erro ao enviar arquivos');
+      const detail = error?.response?.data?.detail || error?.message || 'Erro ao enviar arquivos';
+      toast.error(`Erro ao enviar arquivos: ${detail}`);
     } finally {
       setUploading(false);
     }
@@ -164,6 +165,14 @@ export default function CarouselBlock({ block, updateBlock }) {
 
   const updateItemOrientation = (index, orientation) => {
     const newItems = items.map((it, i) => i === index ? { ...it, orientation } : it);
+    updateBlock(block.id, { content: { ...block.content, items: newItems } });
+  };
+
+  const updateItemZoom = (index, zoom) => {
+    const normalizedZoom = Math.max(20, Math.min(250, parseInt(zoom || '100', 10)));
+    if (parseInt(items[index]?.zoom || '100', 10) === normalizedZoom) return;
+
+    const newItems = items.map((it, i) => i === index ? { ...it, zoom: normalizedZoom } : it);
     updateBlock(block.id, { content: { ...block.content, items: newItems } });
   };
 
@@ -248,6 +257,7 @@ export default function CarouselBlock({ block, updateBlock }) {
             height={520}
             initialZoom={parseInt(item.zoom || '100', 10)}
             showControls={true}
+            onZoomChange={(nextZoom) => updateItemZoom(index, nextZoom)}
           />
         </div>
       );

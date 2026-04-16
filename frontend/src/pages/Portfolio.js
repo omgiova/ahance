@@ -20,9 +20,11 @@ const VIDEO_URL = 'https://customer-assets.emergentagent.com/job_behance-style/a
 const LOGO_URL = 'https://customer-assets.emergentagent.com/job_behance-style/artifacts/ccsqrvdt_EB%20Garamond%20%281%29.png';
 
 const RESUME_LINKS = {
-  pt: `${API}/resume/pt`,
-  en: `${API}/resume/en`
+  pt: '/Curr%C3%ADculo%20-%20Giovani%20Amorim.pdf',
+  en: '/Giovani%20Amorim%20-%20Resume.pdf'
 };
+
+const PORTFOLIO_CACHE_KEY = 'portfolio-published-projects-cache-v1';
 
 export default function Portfolio() {
   const navigate = useNavigate();
@@ -32,9 +34,25 @@ export default function Portfolio() {
   const [scrolled, setScrolled] = useState(false);
   const [expandedLogo, setExpandedLogo] = useState(null);
   const [visibleCount, setVisibleCount] = useState(5);
+  const [totalProjects, setTotalProjects] = useState(0);
 
   useEffect(() => {
-    fetchProjects();
+    try {
+      const cached = localStorage.getItem(PORTFOLIO_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed.projects) && parsed.projects.length > 0) {
+          setProjects(parsed.projects);
+          setTotalProjects(parsed.totalProjects || parsed.projects.length);
+          setVisibleCount(5);
+          setLoading(false);
+        }
+      }
+    } catch (error) {
+      console.warn('Portfolio cache read failed:', error);
+    }
+
+    fetchProjects(5);
   }, []);
 
   useEffect(() => {
@@ -43,12 +61,27 @@ export default function Portfolio() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const fetchProjects = async () => {
+  const fetchProjects = async (limit = 5) => {
     try {
-      const response = await axios.get(`${API}/projects`);
-      const publishedProjects = response.data.filter(p => p.published === true || p.published === "true" || p.published === 1);
-      setProjects(publishedProjects);
-      setVisibleCount(5);
+      const response = await axios.get(`${API}/projects`, {
+        params: {
+          published_only: true,
+          limit
+        }
+      });
+
+      const fetchedProjects = response.data || [];
+      const total = parseInt(response.headers['x-total-count'] || fetchedProjects.length, 10);
+
+      setProjects(fetchedProjects);
+      setTotalProjects(total);
+      setVisibleCount(limit);
+
+      localStorage.setItem(PORTFOLIO_CACHE_KEY, JSON.stringify({
+        projects: fetchedProjects,
+        totalProjects: total,
+        savedAt: Date.now()
+      }));
     } catch (error) {
       console.error('Error fetching projects:', error);
     } finally {
@@ -64,9 +97,12 @@ export default function Portfolio() {
   };
 
   const handleResumeDownload = (lang) => {
+    const url = RESUME_LINKS[lang];
+    if (!url) return;
+
     const link = document.createElement('a');
-    link.href = RESUME_LINKS[lang];
-    link.setAttribute('download', '');
+    link.href = url;
+    link.download = lang === 'pt' ? 'Currículo - Giovani Amorim.pdf' : 'Giovani Amorim - Resume.pdf';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -82,8 +118,8 @@ export default function Portfolio() {
   };
 
   const DECOR_SIZES = [120, 230, 180, 220, 150, 200, 180];
-  const visibleProjects = projects.slice(0, visibleCount);
-  const hasMoreProjects = visibleCount < projects.length;
+  const visibleProjects = projects;
+  const hasMoreProjects = visibleCount < totalProjects;
 
   return (
     <div className="min-h-screen bg-[#fffeec] relative overflow-x-hidden">
@@ -478,7 +514,7 @@ export default function Portfolio() {
             {!loading && hasMoreProjects && (
               <div className="flex justify-center mt-12">
                 <Button
-                  onClick={() => setVisibleCount((prev) => Math.min(prev + 10, projects.length))}
+                  onClick={() => fetchProjects(Math.min(visibleCount + 10, totalProjects || visibleCount + 10))}
                   className="bg-[#e38e4d] text-black hover:bg-[#e38e4d]/90 rounded-full px-8"
                   style={{ fontFamily: 'EB Garamond, serif' }}
                 >

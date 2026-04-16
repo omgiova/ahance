@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException, Header, Query, Depends
+from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException, Header, Query, Depends, Response as FastAPIResponse
 from fastapi.responses import Response, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
@@ -79,6 +79,16 @@ def _upload_local(file_id: str, data: bytes, content_type: str, ext: str) -> dic
         f.write(data)
     logger.info(f"Local upload: {path}")
     return {"public_id": path, "url": f"/api/files/{path}", "size": len(data)}
+
+
+def _normalize_upload_content_type(filename: str, content_type: Optional[str]) -> str:
+    normalized = (content_type or "application/octet-stream").lower().strip()
+    extension = Path(filename or "").suffix.lower()
+
+    if extension == ".pdf":
+        return "application/pdf"
+
+    return normalized
 
 
 def _get_resource_type_for_content_type(content_type: str) -> str:
@@ -282,21 +292,26 @@ async def root():
 
 @api_router.post("/upload", response_model=FileUploadResponse)
 async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    """Upload image or video file to Cloudinary"""
+    """Upload image, video or PDF file to Cloudinary"""
     try:
-        content_type = file.content_type or "application/octet-stream"
+        original_content_type = file.content_type or "application/octet-stream"
+        content_type = _normalize_upload_content_type(file.filename, original_content_type)
         allowed_types = [
             "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif",
             "video/mp4", "video/quicktime", "video/webm",
             "application/pdf"
         ]
-        
+
         if content_type not in allowed_types:
-            raise HTTPException(status_code=400, detail="Invalid file type")
-        
+            raise HTTPException(
+                status_code=400,
+                detail=f"Tipo de arquivo não suportado: {original_content_type}"
+            )
+
         ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else "bin"
         file_id = str(uuid.uuid4())
         data = await file.read()
+        logger.info(f"Upload recebido: filename={file.filename}, original_type={original_content_type}, normalized_type={content_type}, size={len(data)}")
         result = upload_file_storage(file_id, data, content_type, ext)
         
         db_file = FileModel(
@@ -453,18 +468,37 @@ async def create_project(project_data: ProjectCreate, db: Session = Depends(get_
 
 
 @api_router.get("/projects", response_model=List[Project])
-async def get_projects(category: Optional[str] = None, tag: Optional[str] = None, db: Session = Depends(get_db)):
+async def get_projects(
+    response: FastAPIResponse,
+    category: Optional[str] = None,
+    tag: Optional[str] = None,
+    published_only: bool = False,
+    limit: Optional[int] = Query(None, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db)
+):
     """Get all projects with optional filters"""
     try:
         query = db.query(ProjectModel)
-        
+
         if category:
             query = query.filter(ProjectModel.category == category)
         if tag:
             query = query.filter(ProjectModel.tags.contains(tag))
-        
-        projects = query.order_by(ProjectModel.position.asc(), ProjectModel.created_at.desc()).all()
-        
+        if published_only:
+            query = query.filter(ProjectModel.published == True)
+
+        query = query.order_by(ProjectModel.position.asc(), ProjectModel.created_at.desc())
+        total_count = query.count()
+
+        if offset:
+            query = query.offset(offset)
+        if limit:
+            query = query.limit(limit)
+
+        projects = query.all()
+        response.headers["X-Total-Count"] = str(total_count)
+
         return [Project(**{
             'id': p.id,
             'title': p.title,

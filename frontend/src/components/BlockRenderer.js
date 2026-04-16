@@ -48,7 +48,7 @@ function detectMediaType(item = {}) {
   return 'image';
 }
 
-export const PdfCanvasViewer = memo(function PdfCanvasViewer({ url, height, initialZoom = 100, showControls = true }) {
+export const PdfCanvasViewer = memo(function PdfCanvasViewer({ url, height, initialZoom = 100, showControls = true, onZoomChange }) {
   const wrapperRef = useRef(null);
   const [numPages, setNumPages] = useState(0);
   const [pageWidth, setPageWidth] = useState(800);
@@ -85,12 +85,23 @@ export const PdfCanvasViewer = memo(function PdfCanvasViewer({ url, height, init
     return () => window.removeEventListener('resize', updateWidth);
   }, []);
 
+  const changeZoom = (updater) => {
+    setZoom((current) => {
+      const next = typeof updater === 'function' ? updater(current) : updater;
+      const normalized = Math.round(next * 100);
+      if (typeof onZoomChange === 'function') {
+        onZoomChange(normalized);
+      }
+      return next;
+    });
+  };
+
   return (
     <div className="w-full bg-transparent">
       {showControls && (
-        <div className="flex items-center justify-end gap-2 mb-3">
+        <div className="flex items-center justify-center gap-2 mb-3">
           <button
-            onClick={() => setZoom((z) => Math.max(0.6, z - 0.1))}
+            onClick={() => changeZoom((z) => Math.max(0.2, z - 0.1))}
             className="px-2.5 py-1.5 rounded-md border border-black/10 hover:bg-black/5 text-black/70"
             title="Diminuir zoom"
           >
@@ -100,7 +111,7 @@ export const PdfCanvasViewer = memo(function PdfCanvasViewer({ url, height, init
             {Math.round(zoom * 100)}%
           </span>
           <button
-            onClick={() => setZoom((z) => Math.min(2.5, z + 0.1))}
+            onClick={() => changeZoom((z) => Math.min(2.5, z + 0.1))}
             className="px-2.5 py-1.5 rounded-md border border-black/10 hover:bg-black/5 text-black/70"
             title="Aumentar zoom"
           >

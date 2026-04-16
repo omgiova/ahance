@@ -44,7 +44,8 @@ export default function PdfBlock({ block, updateBlock }) {
       toast.success('PDF enviado!');
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Erro ao enviar PDF');
+      const detail = error?.response?.data?.detail || error?.message || 'Erro ao enviar PDF';
+      toast.error(`Erro ao enviar PDF: ${detail}`);
     } finally {
       setUploading(false);
     }
@@ -90,7 +91,7 @@ export default function PdfBlock({ block, updateBlock }) {
           <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/20 px-2 py-1">
             <button
               type="button"
-              onClick={() => updateSetting('zoom', String(Math.max(50, zoom - 10)))}
+              onClick={() => updateSetting('zoom', String(Math.max(20, zoom - 10)))}
               className="w-7 h-7 rounded-md hover:bg-white/10 text-zinc-100"
             >
               -
