@@ -31,6 +31,7 @@ export default function Portfolio() {
   const [showResumeDropdown, setShowResumeDropdown] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [expandedLogo, setExpandedLogo] = useState(null);
+  const [visibleCount, setVisibleCount] = useState(5);
 
   useEffect(() => {
     fetchProjects();
@@ -45,7 +46,9 @@ export default function Portfolio() {
   const fetchProjects = async () => {
     try {
       const response = await axios.get(`${API}/projects`);
-      setProjects(response.data.filter(p => p.published === true || p.published === "true" || p.published === 1));
+      const publishedProjects = response.data.filter(p => p.published === true || p.published === "true" || p.published === 1);
+      setProjects(publishedProjects);
+      setVisibleCount(5);
     } catch (error) {
       console.error('Error fetching projects:', error);
     } finally {
@@ -79,6 +82,8 @@ export default function Portfolio() {
   };
 
   const DECOR_SIZES = [120, 230, 180, 220, 150, 200, 180];
+  const visibleProjects = projects.slice(0, visibleCount);
+  const hasMoreProjects = visibleCount < projects.length;
 
   return (
     <div className="min-h-screen bg-[#fffeec] relative overflow-x-hidden">
@@ -373,7 +378,7 @@ export default function Portfolio() {
               </div>
             ) : (
               <div className="space-y-2">
-                {projects.map((project, index) => (
+                {visibleProjects.map((project, index) => (
                   <motion.article
                     key={project.id}
                     initial={{ opacity: 0, y: 40 }}
@@ -467,6 +472,18 @@ export default function Portfolio() {
                     <div className="pt-16 border-t border-black/10" />
                   </motion.article>
                 ))}
+              </div>
+            )}
+
+            {!loading && hasMoreProjects && (
+              <div className="flex justify-center mt-12">
+                <Button
+                  onClick={() => setVisibleCount((prev) => Math.min(prev + 10, projects.length))}
+                  className="bg-[#e38e4d] text-black hover:bg-[#e38e4d]/90 rounded-full px-8"
+                  style={{ fontFamily: 'EB Garamond, serif' }}
+                >
+                  VER MAIS
+                </Button>
               </div>
             )}
           </div>

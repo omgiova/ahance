@@ -18,6 +18,7 @@ export default function Home() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('grid');
+  const [visibleCount, setVisibleCount] = useState(5);
 
   useEffect(() => {
     fetchProjects();
@@ -27,12 +28,16 @@ export default function Home() {
     try {
       const response = await axios.get(`${API}/projects`);
       setProjects(response.data);
+      setVisibleCount(5);
     } catch (error) {
       console.error('Error fetching projects:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  const visibleProjects = projects.slice(0, visibleCount);
+  const hasMoreProjects = visibleCount < projects.length;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 relative overflow-x-hidden">
@@ -141,7 +146,7 @@ export default function Home() {
           <div
             className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-6'}
           >
-            {projects.map((project, index) => (
+            {visibleProjects.map((project, index) => (
               <motion.div
                 key={project.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -199,6 +204,17 @@ export default function Home() {
                 </div>
               </motion.div>
             ))}
+          </div>
+        )}
+
+        {!loading && hasMoreProjects && (
+          <div className="flex justify-center mt-10">
+            <Button
+              onClick={() => setVisibleCount((prev) => Math.min(prev + 10, projects.length))}
+              className="bg-amber-500 text-zinc-950 hover:bg-amber-400 rounded-full px-8"
+            >
+              VER MAIS
+            </Button>
           </div>
         )}
       </div>

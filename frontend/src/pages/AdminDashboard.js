@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Edit, Trash2, Eye, ArrowLeft, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, ArrowLeft, Search, ArrowUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -117,6 +117,30 @@ export default function AdminDashboard() {
   const displayProjects = search.trim()
     ? baseProjects.filter(p => p.title?.toLowerCase().includes(search.trim().toLowerCase()))
     : baseProjects;
+
+  const handleSendToTop = async (projectId) => {
+    const projectIndex = projects.findIndex((p) => p.id === projectId);
+    if (projectIndex <= 0) return;
+
+    const reorderedProjects = [
+      projects[projectIndex],
+      ...projects.filter((p) => p.id !== projectId)
+    ];
+
+    setProjects(reorderedProjects);
+
+    try {
+      await axios.put(`${API}/projects/reorder`, {
+        project_ids: reorderedProjects.map((p) => p.id)
+      });
+      toast.success('Projeto enviado ao topo!');
+      fetchProjects();
+    } catch (error) {
+      console.error('Send to top error:', error);
+      toast.error('Erro ao enviar projeto ao topo');
+      fetchProjects();
+    }
+  };
 
   const handleDelete = async (projectId, projectTitle) => {
     if (!window.confirm(`Tem certeza que deseja deletar "${projectTitle}"?`)) {
@@ -333,6 +357,16 @@ export default function AdminDashboard() {
                       title="Visualizar no site"
                     >
                       <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSendToTop(project.id)}
+                      disabled={projects[0]?.id === project.id}
+                      className="text-black/60 hover:text-[#e38e4d] disabled:opacity-30"
+                      title="Mandar ao topo"
+                    >
+                      <ArrowUp className="w-4 h-4" />
                     </Button>
                     <Button
                       variant="ghost"
