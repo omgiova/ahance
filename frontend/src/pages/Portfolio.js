@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
-import { ChevronDown, X } from 'lucide-react';
+import { ChevronDown, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -31,6 +31,7 @@ export default function Portfolio() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showResumeDropdown, setShowResumeDropdown] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [expandedLogo, setExpandedLogo] = useState(null);
   const [visibleCount, setVisibleCount] = useState(5);
@@ -88,6 +89,8 @@ export default function Portfolio() {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
+    setShowMobileMenu(false);
+    setShowResumeDropdown(false);
   };
 
   const handleResumeDownload = (lang) => {
@@ -101,6 +104,7 @@ export default function Portfolio() {
     link.click();
     document.body.removeChild(link);
     setShowResumeDropdown(false);
+    setShowMobileMenu(false);
   };
 
   const getLuminance = (hex) => {
@@ -134,25 +138,25 @@ export default function Portfolio() {
               style={{ mixBlendMode: 'multiply', opacity: 0.9 }}
             />
           )}
-          <nav className="flex items-center justify-end gap-8">
+          <nav className={`${scrolled ? 'hidden md:flex' : 'flex'} w-full items-center justify-between md:justify-end gap-2 md:gap-8`}>
               <button
                 onClick={() => scrollToSection('sobre')}
-                className="text-base text-black/70 hover:text-black transition-colors"
+                className="flex-1 md:flex-none text-left text-[15px] md:text-base text-black/70 hover:text-black transition-colors"
                 style={{ fontFamily: 'EB Garamond, serif' }}
               >
                 SOBRE
               </button>
               <button
                 onClick={() => scrollToSection('projetos')}
-                className="text-base text-black/70 hover:text-black transition-colors"
+                className="flex-1 md:flex-none text-center md:text-left text-[15px] md:text-base text-black/70 hover:text-black transition-colors"
                 style={{ fontFamily: 'EB Garamond, serif' }}
               >
                 PROJETOS
               </button>
-              <div className="relative">
+              <div className="relative flex-1 md:flex-none flex justify-end">
                 <button
                   onClick={() => setShowResumeDropdown(!showResumeDropdown)}
-                  className="text-base text-black/70 hover:text-black transition-colors flex items-center gap-1"
+                  className="text-[15px] md:text-base text-black/70 hover:text-black transition-colors flex items-center gap-1"
                   style={{ fontFamily: 'EB Garamond, serif' }}
                 >
                   CURRÍCULO
@@ -162,28 +166,118 @@ export default function Portfolio() {
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="absolute top-full right-0 mt-2 bg-white border border-black/10 rounded-lg shadow-lg overflow-hidden"
+                    className="absolute top-full right-0 mt-2 bg-[#fffeec] border border-black/10 rounded-lg shadow-lg overflow-hidden"
                   >
                     <button
                       onClick={() => handleResumeDownload('pt')}
-                      className="block w-full px-6 py-3 text-left text-black hover:bg-black/5 transition-colors"
+                      className="block w-full px-6 py-3 text-left text-black/70 hover:text-black hover:bg-black/5 transition-colors uppercase"
                       style={{ fontFamily: 'EB Garamond, serif' }}
                     >
-                      Português
+                      PORTUGUÊS
                     </button>
                     <button
                       onClick={() => handleResumeDownload('en')}
-                      className="block w-full px-6 py-3 text-left text-black hover:bg-black/5 transition-colors"
+                      className="block w-full px-6 py-3 text-left text-black/70 hover:text-black hover:bg-black/5 transition-colors uppercase"
                       style={{ fontFamily: 'EB Garamond, serif' }}
                     >
-                      English
+                      ENGLISH
                     </button>
                   </motion.div>
                 )}
               </div>
           </nav>
+
+          <div className={`${scrolled ? 'flex' : 'hidden'} md:hidden items-center justify-end`}>
+            <button
+              onClick={() => setShowMobileMenu(true)}
+              className="p-2 rounded-full text-black/70 hover:text-black hover:bg-black/5 transition-colors"
+              aria-label="Abrir menu"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+          </div>
         </div>
       </motion.header>
+
+      {showMobileMenu && (
+        <>
+          <button
+            className="fixed inset-0 z-[60] bg-black/30 md:hidden"
+            onClick={() => {
+              setShowMobileMenu(false);
+              setShowResumeDropdown(false);
+            }}
+            aria-label="Fechar menu"
+          />
+          <motion.aside
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            className="fixed top-0 right-0 z-[70] h-full w-[280px] bg-[#fffeec] border-l border-black/10 shadow-2xl p-6 md:hidden"
+          >
+            <div className="flex items-center justify-between mb-8">
+              <span className="text-lg text-black" style={{ fontFamily: 'EB Garamond, serif' }}>
+                Menu
+              </span>
+              <button
+                onClick={() => {
+                  setShowMobileMenu(false);
+                  setShowResumeDropdown(false);
+                }}
+                className="p-2 rounded-full text-black/70 hover:text-black hover:bg-black/5"
+                aria-label="Fechar menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <button
+                onClick={() => scrollToSection('sobre')}
+                className="w-full text-left py-1 text-[15px] uppercase text-black/70 hover:text-black transition-colors"
+                style={{ fontFamily: 'EB Garamond, serif' }}
+              >
+                SOBRE
+              </button>
+              <button
+                onClick={() => scrollToSection('projetos')}
+                className="w-full text-left py-1 text-[15px] uppercase text-black/70 hover:text-black transition-colors"
+                style={{ fontFamily: 'EB Garamond, serif' }}
+              >
+                PROJETOS
+              </button>
+              <div>
+                <button
+                  onClick={() => setShowResumeDropdown(!showResumeDropdown)}
+                  className="w-full flex items-center justify-between py-1 text-[15px] uppercase text-black/70 hover:text-black transition-colors"
+                  style={{ fontFamily: 'EB Garamond, serif' }}
+                >
+                  <span>CURRÍCULO</span>
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                {showResumeDropdown && (
+                  <div className="mt-2 flex flex-col gap-2 pl-1 bg-[#fffeec]">
+                    <button
+                      onClick={() => handleResumeDownload('pt')}
+                      className="text-left py-1 text-[14px] uppercase text-black/70 hover:text-black transition-colors"
+                      style={{ fontFamily: 'EB Garamond, serif' }}
+                    >
+                      PORTUGUÊS
+                    </button>
+                    <button
+                      onClick={() => handleResumeDownload('en')}
+                      className="text-left py-1 text-[14px] uppercase text-black/70 hover:text-black transition-colors"
+                      style={{ fontFamily: 'EB Garamond, serif' }}
+                    >
+                      ENGLISH
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.aside>
+        </>
+      )}
 
       {/* Logo Section - colado com header (56px do header fixo) */}
       <motion.div
@@ -235,13 +329,13 @@ export default function Portfolio() {
             className="text-center px-6"
           >
             <h1 
-              className="text-6xl md:text-7xl font-normal text-black mb-4"
+              className="text-4xl md:text-7xl font-normal text-black mb-4"
               style={{ fontFamily: 'EB Garamond, serif', lineHeight: '1.1' }}
             >
               redator
             </h1>
             <h2 
-              className="text-6xl md:text-7xl font-normal text-black"
+              className="text-4xl md:text-7xl font-normal text-black"
               style={{ fontFamily: 'EB Garamond, serif', lineHeight: '1.1' }}
             >
               estrategista de conteúdo
@@ -343,6 +437,24 @@ export default function Portfolio() {
             </p>
             <p>
               Ajudei a fundar e coordenar a comunicação de uma proptech que fez mais de R$ 60 milhões em VGV em menos de 3 anos.
+            </p>
+            <p>
+              Fale comigo no{' '}
+              <a
+                href="mailto:contato@giovaniamorim.com"
+                className="text-inherit hover:text-inherit underline-offset-4 cursor-pointer"
+              >
+                contato@giovaniamorim.com
+              </a>{' '}
+              ou{' '}
+              <a
+                href="https://wa.me/5511986501499"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-inherit hover:text-inherit underline-offset-4 cursor-pointer"
+              >
+                +55 11 98650-1499
+              </a>.
             </p>
           </div>
         </div>
