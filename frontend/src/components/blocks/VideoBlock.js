@@ -86,7 +86,7 @@ export default function VideoBlock({ block, updateBlock }) {
   const currentRatio = ORIENTATIONS.find(o => o.value === currentOrientation)?.ratio || '56.25%';
 
   const videoSrc = block.content.type === 'upload' && block.content.video
-    ? `${API}/files/${block.content.video}`
+    ? `${API}/files/${block.content.video}?w=1280`
     : block.content.url;
 
   return (
@@ -162,6 +162,8 @@ export default function VideoBlock({ block, updateBlock }) {
               <video
                 src={videoSrc}
                 controls
+                playsInline
+                preload="metadata"
                 style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 200px)', width: 'auto', height: 'auto' }}
               />
             )}

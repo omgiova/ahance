@@ -103,9 +103,13 @@ def _build_cloudinary_delivery_url(public_id: str, resource_type: str, width: Op
     if not cloud_name:
         return ""
 
-    if resource_type == "image" and width:
-        safe_width = max(200, min(int(width), 2400))
+    safe_width = max(200, min(int(width or 1280), 2400))
+
+    if resource_type == "image":
         return f"https://res.cloudinary.com/{cloud_name}/image/upload/f_auto,q_auto,c_limit,w_{safe_width}/{public_id}"
+
+    if resource_type == "video":
+        return f"https://res.cloudinary.com/{cloud_name}/video/upload/f_auto,q_auto:good,vc_auto,c_limit,w_{safe_width}/{public_id}"
 
     return f"https://res.cloudinary.com/{cloud_name}/{resource_type}/upload/{public_id}"
 

@@ -10,22 +10,26 @@ const API = `${BACKEND_URL}/api`;
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;
 
-function buildCloudinaryOptimizedUrl(url, width = 1600) {
+function buildCloudinaryOptimizedUrl(url, width = 1600, mediaType = 'image') {
   if (!url || !url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
   if (url.includes('/f_auto,q_auto') || /\/w_\d+[,/]/.test(url)) return url;
 
   const safeWidth = Math.max(200, Math.min(Number(width) || 1600, 2400));
-  return url.replace('/upload/', `/upload/f_auto,q_auto,c_limit,w_${safeWidth}/`);
+  const transform = mediaType === 'video'
+    ? `f_auto,q_auto:good,vc_auto,c_limit,w_${safeWidth}`
+    : `f_auto,q_auto,c_limit,w_${safeWidth}`;
+
+  return url.replace('/upload/', `/upload/${transform}/`);
 }
 
 function getMediaUrl(path, options = {}) {
   if (!path) return null;
 
-  const { optimize = false, width = 1600 } = options;
+  const { optimize = false, width = 1600, mediaType = 'image' } = options;
   const safeWidth = Math.max(200, Math.min(Number(width) || 1600, 2400));
 
   if (path.startsWith('http://') || path.startsWith('https://')) {
-    return optimize ? buildCloudinaryOptimizedUrl(path, safeWidth) : path;
+    return optimize ? buildCloudinaryOptimizedUrl(path, safeWidth, mediaType) : path;
   }
 
   const query = optimize ? `?w=${safeWidth}` : '';
@@ -277,8 +281,10 @@ export default function BlockRenderer({ block }) {
           }
 
           const fullUrl = mediaType === 'image'
-            ? getMediaUrl(item.url, { optimize: true, width: 1600 })
-            : getMediaUrl(item.url);
+            ? getMediaUrl(item.url, { optimize: true, width: 1600, mediaType: 'image' })
+            : mediaType === 'video'
+              ? getMediaUrl(item.url, { optimize: true, width: 1280, mediaType: 'video' })
+              : getMediaUrl(item.url);
 
           if (mediaType === 'video') {
             return (
@@ -297,6 +303,7 @@ export default function BlockRenderer({ block }) {
                     <video 
                       src={fullUrl} 
                       controls 
+                      playsInline
                       preload="metadata"
                       className="max-w-full max-h-full object-contain"
                     />
@@ -388,7 +395,7 @@ export default function BlockRenderer({ block }) {
 
       case 'video':
         const videoSrc = block.content.type === 'upload' && block.content.video
-          ? getMediaUrl(block.content.video)
+          ? getMediaUrl(block.content.video, { optimize: true, width: 1280, mediaType: 'video' })
           : block.content.url;
         
         if (!videoSrc) return null;
@@ -447,6 +454,7 @@ export default function BlockRenderer({ block }) {
                 <video
                   src={videoSrc}
                   controls
+                  playsInline
                   preload="metadata"
                   className="max-w-full max-h-full object-contain"
                 />
