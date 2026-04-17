@@ -1,7 +1,7 @@
 # Portfolio Giovani Amorim - PRD
 
 ## Problema Original
-Criar um site/mobile site no estilo perfil de freelancer do Behance para Giovani Amorim (único admin). Design editorial minimalista com funcionalidades completas do Behance para adicionar itens ao portfólio.
+Criar um site/mobile site no estilo perfil de freelancer para Giovani Amorim (único admin). Design editorial minimalista com funcionalidades completas para adicionar itens ao portfólio.
 
 ## Requisitos de Design
 - **Fundo**: `#fffeec` (creme)
@@ -14,7 +14,7 @@ Criar um site/mobile site no estilo perfil de freelancer do Behance para Giovani
 ### Core
 - [x] Homepage pública com vídeo hero, logo e lista de projetos
 - [x] Admin dashboard (`/admin`) para gerenciar projetos
-- [x] Editor de blocos estilo Behance (`/admin/add-project`, `/admin/edit-project/:id`)
+- [x] Editor de blocos (`/admin/add-project`, `/admin/edit-project/:id`)
 - [x] Tipos de blocos: Texto, Imagem, Grid, Carrossel, Vídeo, Embed, Separador, Espaço
 
 ### Sistema de Tags (Atualizado 2026-04-03)
@@ -48,7 +48,7 @@ Criar um site/mobile site no estilo perfil de freelancer do Behance para Giovani
 
 ### Backend
 - FastAPI + Motor (MongoDB async)
-- Emergent Object Storage para arquivos
+- Object Storage para arquivos
 
 ### Banco de Dados
 - `projects`: `{id, title, description, category, blocks[], tags[], published, cover_image}`

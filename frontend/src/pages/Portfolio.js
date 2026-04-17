@@ -16,8 +16,8 @@ function getMediaUrl(path) {
   return `${API}/files/${path}`;
 }
 
-const VIDEO_URL = 'https://customer-assets.emergentagent.com/job_behance-style/artifacts/zeh5zsql_ascii-video-1775235924403.mp4';
-const LOGO_URL = 'https://customer-assets.emergentagent.com/job_behance-style/artifacts/ccsqrvdt_EB%20Garamond%20%281%29.png';
+const VIDEO_URL = '/video-header.mp4';
+const LOGO_URL = '/logo.png';
 
 const RESUME_LINKS = {
   pt: '/Curr%C3%ADculo%20-%20Giovani%20Amorim.pdf',
