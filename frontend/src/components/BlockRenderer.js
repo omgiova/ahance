@@ -274,7 +274,7 @@ export default function BlockRenderer({ block }) {
                   {item.sourceType === 'url' || /^https?:/i.test(item.url || '') ? (
                     <div className="w-full h-full">
                       <ReactPlayer 
-                        url={fullUrl} 
+                        src={fullUrl} 
                         width="100%" 
                         height="100%" 
                         controls 
@@ -391,7 +391,7 @@ export default function BlockRenderer({ block }) {
                 <div className="w-full h-full flex items-center justify-center">
                   <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }}>
                     <ReactPlayer
-                      url={videoSrc}
+                      src={videoSrc}
                       controls
                       width="100%"
                       height="100%"
@@ -426,7 +426,7 @@ export default function BlockRenderer({ block }) {
           <LazyLoadWrapper minHeight={260}>
             <div className="relative bg-black">
               <ReactPlayer
-                url={block.content.url}
+                src={block.content.url}
                 controls
                 width="100%"
                 height="auto"

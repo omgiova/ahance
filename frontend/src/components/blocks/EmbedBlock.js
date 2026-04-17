@@ -51,7 +51,7 @@ export default function EmbedBlock({ block, updateBlock }) {
         <div className="space-y-3">
           <div className="relative rounded-2xl overflow-hidden bg-black">
             <ReactPlayer
-              url={url}
+              src={url}
               controls
               width="100%"
               height="400px"

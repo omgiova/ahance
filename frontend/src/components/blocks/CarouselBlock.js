@@ -210,7 +210,7 @@ export default function CarouselBlock({ block, updateBlock }) {
       return (
         <div className="w-full h-full flex items-center justify-center">
           {item.sourceType === 'url' || /^https?:/i.test(item.url || '') ? (
-            <ReactPlayer url={fullUrl} width="100%" height="100%" controls />
+            <ReactPlayer src={fullUrl} width="100%" height="100%" controls />
           ) : (
             <video src={fullUrl} controls className="max-w-full max-h-full object-contain" />
           )}

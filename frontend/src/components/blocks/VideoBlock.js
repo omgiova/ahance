@@ -108,7 +108,7 @@ export default function VideoBlock({ block, updateBlock }) {
             {block.content.type !== 'upload' ? (
               <div className="w-full" style={{ maxHeight: 'calc(100vh - 200px)' }}>
                 <ReactPlayer
-                  url={videoSrc}
+                  src={videoSrc}
                   controls
                   width="100%"
                   height="100%"
