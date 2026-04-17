@@ -289,9 +289,9 @@ class FileUploadResponse(BaseModel):
 
 
 # Routes
-@api_router.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def root():
-    return {"message": "Behance Portfolio API"}
+    return {"message": "Giovani Amorim Portfolio API"}
 
 
 @api_router.post("/upload", response_model=FileUploadResponse)
@@ -799,7 +799,7 @@ async def update_tag(tag_id: str, tag_update: dict, db: Session = Depends(get_db
 
 
 # Root routes
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def root():
     """Root endpoint"""
     return {"message": "Backend is running!", "docs": "/docs"}
