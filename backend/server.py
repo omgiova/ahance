@@ -294,6 +294,16 @@ async def root():
     return {"message": "Giovani Amorim Portfolio API"}
 
 
+@api_router.api_route("", methods=["GET", "HEAD"])
+@api_router.api_route("/", methods=["GET", "HEAD"])
+async def api_root():
+    return {
+        "message": "API is running!",
+        "status": "ok",
+        "docs": "/docs"
+    }
+
+
 @api_router.post("/upload", response_model=FileUploadResponse)
 async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
     """Upload image, video or PDF file to Cloudinary"""
