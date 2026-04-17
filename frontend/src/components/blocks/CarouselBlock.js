@@ -19,30 +19,20 @@ export default function CarouselBlock({ block, updateBlock }) {
   const [cachedPdfUrls, setCachedPdfUrls] = useState([]);
   const fileInputRef = useRef(null);
 
-  const parseGoogleDriveUrl = (raw) => {
-    try {
-      const u = new URL(raw);
-      if (!u.host.includes('drive.google.com')) return null;
-      const match = u.pathname.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-      if (match) return `https://drive.google.com/file/d/${match[1]}/preview`;
-      const id = u.searchParams.get('id');
-      if (id) return `https://drive.google.com/file/d/${id}/preview`;
-    } catch (_) {}
-    return null;
-  };
-
   const detectMediaType = (item = {}) => {
     const rawType = String(item.type || item.contentType || item.mimeType || '').toLowerCase();
     const rawName = String(item.filename || item.name || item.url || '').toLowerCase();
+    const sourceType = String(item.sourceType || '').toLowerCase();
 
-    if (rawType === 'gdrive') return 'gdrive';
     if (rawType === 'pdf' || rawType.includes('pdf') || /\.pdf($|\?)/i.test(rawName)) return 'pdf';
     if (
       rawType === 'video' ||
+      rawType === 'url' ||
       rawType.startsWith('video/') ||
-      /youtube|youtu\.be|vimeo|drive\.google\.com/i.test(rawName)
+      sourceType === 'url' ||
+      /youtube|youtu\.be|vimeo|\.mp4($|\?)/i.test(rawName)
     ) {
-      return rawName.includes('drive.google.com') ? 'gdrive' : 'video';
+      return 'video';
     }
     return 'image';
   };
@@ -111,7 +101,6 @@ export default function CarouselBlock({ block, updateBlock }) {
     if (!videoUrl.trim()) return;
 
     const rawUrl = videoUrl.trim();
-    const gdriveEmbed = parseGoogleDriveUrl(rawUrl);
     const isPdfUrl = /\.pdf($|\?)/i.test(rawUrl);
     const newItem = isPdfUrl
       ? {
@@ -122,9 +111,7 @@ export default function CarouselBlock({ block, updateBlock }) {
           contentType: 'application/pdf',
           zoom: 100
         }
-      : gdriveEmbed
-        ? { type: 'gdrive', url: gdriveEmbed, sourceType: 'url', orientation: 'landscape' }
-        : { type: 'video', url: rawUrl, sourceType: 'url' };
+      : { type: 'video', url: rawUrl, sourceType: 'url' };
 
     updateBlock(block.id, {
       content: {
@@ -136,7 +123,7 @@ export default function CarouselBlock({ block, updateBlock }) {
 
     setVideoUrl('');
     setShowUrlInput(false);
-    toast.success(isPdfUrl ? 'PDF adicionado via URL!' : gdriveEmbed ? 'Vídeo do Google Drive adicionado!' : 'Vídeo adicionado via URL!');
+    toast.success(isPdfUrl ? 'PDF adicionado via URL!' : 'Vídeo adicionado via URL!');
   };
 
   const removeItem = (index) => {
@@ -215,24 +202,6 @@ export default function CarouselBlock({ block, updateBlock }) {
 
     const mediaType = detectMediaType(item);
 
-    if (mediaType === 'gdrive') {
-      const ratioMap = { landscape: '56.25%', portrait: '177.78%', square: '100%' };
-      const paddingTop = ratioMap[item.orientation] || '56.25%';
-      const width = item.orientation === 'portrait' ? '338px' : '100%';
-      return (
-        <div className="w-full h-full flex items-center justify-center">
-          <div style={{ position: 'relative', paddingTop, width, maxWidth: '100%' }}>
-            <iframe
-              src={item.url}
-              allow="autoplay; fullscreen; picture-in-picture"
-              allowFullScreen
-              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-            />
-          </div>
-        </div>
-      );
-    }
-
     const fullUrl = item.url?.startsWith('http://') || item.url?.startsWith('https://')
       ? item.url
       : `${API}/files/${item.url}`;
@@ -240,7 +209,7 @@ export default function CarouselBlock({ block, updateBlock }) {
     if (mediaType === 'video') {
       return (
         <div className="w-full h-full flex items-center justify-center">
-          {item.sourceType === 'url' ? (
+          {item.sourceType === 'url' || /^https?:/i.test(item.url || '') ? (
             <ReactPlayer url={fullUrl} width="100%" height="100%" controls />
           ) : (
             <video src={fullUrl} controls className="max-w-full max-h-full object-contain" />
@@ -308,7 +277,7 @@ export default function CarouselBlock({ block, updateBlock }) {
           <Input
             value={videoUrl}
             onChange={(e) => setVideoUrl(e.target.value)}
-            placeholder="Cole o link do YouTube, Vimeo, Google Drive ou de um PDF..."
+            placeholder="Cole o link do YouTube, Vimeo ou de um PDF..."
             className="h-8 bg-black/40 border-white/10"
           />
           <Button size="sm" onClick={handleAddUrl} className="bg-amber-500 text-zinc-950">
@@ -368,24 +337,7 @@ export default function CarouselBlock({ block, updateBlock }) {
             )}
           </div>
 
-          {items[currentIndex]?.type === 'gdrive' && (
-            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-sm rounded-full px-3 py-1.5 z-10">
-              <span className="text-xs text-zinc-400">Formato:</span>
-              {ORIENTATIONS.map(o => (
-                <button
-                  key={o.value}
-                  onClick={() => updateItemOrientation(currentIndex, o.value)}
-                  className={`text-xs px-2 py-0.5 rounded transition-colors ${
-                    (items[currentIndex].orientation || 'landscape') === o.value
-                      ? 'bg-amber-500 text-zinc-950'
-                      : 'text-zinc-300 hover:text-white'
-                  }`}
-                >
-                  {o.label}
-                </button>
-              ))}
-            </div>
-          )}
+
 
           {items.length > 1 && (
             <>

@@ -39,15 +39,17 @@ function getMediaUrl(path, options = {}) {
 function detectMediaType(item = {}) {
   const rawType = String(item.type || item.contentType || item.mimeType || '').toLowerCase();
   const rawName = String(item.filename || item.name || item.url || '').toLowerCase();
+  const sourceType = String(item.sourceType || '').toLowerCase();
 
-  if (rawType === 'gdrive') return 'gdrive';
   if (rawType === 'pdf' || rawType.includes('pdf') || /\.pdf($|\?)/i.test(rawName)) return 'pdf';
   if (
     rawType === 'video' ||
+    rawType === 'url' ||
     rawType.startsWith('video/') ||
-    /youtube|youtu\.be|vimeo|drive\.google\.com/i.test(rawName)
+    sourceType === 'url' ||
+    /youtube|youtu\.be|vimeo|\.mp4($|\?)/i.test(rawName)
   ) {
-    return rawName.includes('drive.google.com') ? 'gdrive' : 'video';
+    return 'video';
   }
   return 'image';
 }
@@ -259,27 +261,6 @@ export default function BlockRenderer({ block }) {
         const renderCarouselItem = (item, index) => {
           const mediaType = detectMediaType(item);
 
-          if (mediaType === 'gdrive') {
-            const ratioMap = { landscape: '56.25%', portrait: '177.78%', square: '100%' };
-            const paddingTop = ratioMap[item.orientation] || '56.25%';
-            const width = item.orientation === 'portrait' ? '394px' : '100%';
-            return (
-              <LazyLoadWrapper className="w-full h-full flex items-center justify-center" minHeight={420}>
-                <div className="w-full h-full flex items-center justify-center">
-                  <div style={{ position: 'relative', paddingTop, width, maxWidth: '100%' }}>
-                    <iframe
-                      src={item.url}
-                      loading="lazy"
-                      allow="autoplay; fullscreen; picture-in-picture"
-                      allowFullScreen
-                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                    />
-                  </div>
-                </div>
-              </LazyLoadWrapper>
-            );
-          }
-
           const fullUrl = mediaType === 'image'
             ? getMediaUrl(item.url, { optimize: true, width: 1600, mediaType: 'image' })
             : mediaType === 'video'
@@ -290,7 +271,7 @@ export default function BlockRenderer({ block }) {
             return (
               <LazyLoadWrapper className="w-full h-full flex items-center justify-center" minHeight={420}>
                 <div className="w-full h-full flex items-center justify-center">
-                  {item.sourceType === 'url' ? (
+                  {item.sourceType === 'url' || /^https?:/i.test(item.url || '') ? (
                     <div className="w-full h-full">
                       <ReactPlayer 
                         url={fullUrl} 
@@ -406,31 +387,7 @@ export default function BlockRenderer({ block }) {
             style={{ height: '700px', maxHeight: 'calc(100vh - 100px)' }}
           >
             <LazyLoadWrapper className="w-full h-full flex items-center justify-center" minHeight={520}>
-              {block.content.type === 'gdrive' ? (() => {
-                const ratioMap = { landscape: '56.25%', portrait: '177.78%', square: '100%' };
-                const isPortrait = block.content.orientation === 'portrait';
-                const isSquare = block.content.orientation === 'square';
-                return (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <div
-                      style={{
-                        position: 'relative',
-                        width: isPortrait ? '394px' : '100%',
-                        maxWidth: '100%',
-                        paddingTop: isPortrait ? '177.78%' : isSquare ? '100%' : '56.25%',
-                      }}
-                    >
-                      <iframe
-                        src={videoSrc}
-                        loading="lazy"
-                        allow="autoplay; fullscreen; picture-in-picture"
-                        allowFullScreen
-                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                      />
-                    </div>
-                  </div>
-                );
-              })() : block.content.type === 'url' ? (
+              {block.content.type !== 'upload' ? (
                 <div className="w-full h-full flex items-center justify-center">
                   <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }}>
                     <ReactPlayer
