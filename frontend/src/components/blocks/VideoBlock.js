@@ -7,7 +7,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import ReactPlayer from 'react-player';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || "https://ahance.onrender.com").replace(/\/$/, "");
 const API = `${BACKEND_URL}/api`;
 
 export default function VideoBlock({ block, updateBlock }) {

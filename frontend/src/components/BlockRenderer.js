@@ -5,7 +5,7 @@ import ReactPlayer from 'react-player';
 import { Document, Page, pdfjs } from 'react-pdf';
 import LazyLoadWrapper from '@/components/LazyLoadWrapper';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || "https://ahance.onrender.com").replace(/\/$/, "");
 const API = `${BACKEND_URL}/api`;
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.mjs`;

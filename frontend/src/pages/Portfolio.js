@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import BlockRenderer from '@/components/BlockRenderer';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || "https://ahance.onrender.com").replace(/\/$/, "");
 const API = `${BACKEND_URL}/api`;
 
 function getMediaUrl(path) {

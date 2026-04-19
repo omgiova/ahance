@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || "https://ahance.onrender.com").replace(/\/$/, "");
 const API = `${BACKEND_URL}/api`;
 const ORDER_SAVE_PREFIX = 'admin-project-order-save-slot-';
 const SAVE_SLOT_STYLES = {

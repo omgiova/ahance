@@ -9,7 +9,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import BlockEditor from '@/components/BlockEditor';
 import ProjectSettings from '@/components/ProjectSettings';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || "https://ahance.onrender.com").replace(/\/$/, "");
 const API = `${BACKEND_URL}/api`;
 
 const CATEGORIES = [
