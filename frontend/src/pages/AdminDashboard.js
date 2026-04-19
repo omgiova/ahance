@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Edit, Trash2, Eye, ArrowLeft, Search, ArrowUp, Save, RotateCcw } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, ArrowLeft, Search, ArrowUp, Save, RotateCcw, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { clearAdminPassword } from '@/lib/adminAuth';
 
 const BACKEND_URL = (process.env.REACT_APP_BACKEND_URL || "https://ahance.onrender.com").replace(/\/$/, "");
 const API = `${BACKEND_URL}/api`;
@@ -210,6 +211,12 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleLogout = () => {
+    clearAdminPassword();
+    toast.success('Sessão administrativa encerrada');
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen bg-[#fffeec]">
       {/* Header */}
@@ -231,14 +238,25 @@ export default function AdminDashboard() {
               Painel Administrativo
             </h1>
           </div>
-          <Button
-            onClick={() => navigate('/admin/add-project')}
-            className="bg-[#e38e4d] text-black hover:bg-[#e38e4d]/90 rounded-full px-6"
-            style={{ fontFamily: 'EB Garamond, serif' }}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Projeto
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => navigate('/admin/add-project')}
+              className="bg-[#e38e4d] text-black hover:bg-[#e38e4d]/90 rounded-full px-6"
+              style={{ fontFamily: 'EB Garamond, serif' }}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Projeto
+            </Button>
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              className="rounded-full px-5 border-black/20 bg-white/70 hover:bg-white"
+              style={{ fontFamily: 'EB Garamond, serif' }}
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sair
+            </Button>
+          </div>
         </div>
       </motion.header>
 

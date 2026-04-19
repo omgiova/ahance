@@ -70,6 +70,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+async def verify_admin(x_admin_password: Optional[str] = Header(None)):
+    admin_password = os.environ.get("ADMIN_PASSWORD", "").strip()
+
+    if not admin_password:
+        logger.error("ADMIN_PASSWORD environment variable is not configured")
+        raise HTTPException(status_code=503, detail="Admin authentication is not configured")
+
+    if not x_admin_password or x_admin_password != admin_password:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+
 def _upload_local(file_id: str, data: bytes, content_type: str, ext: str) -> dict:
     """Fallback: salva arquivo em disco local"""
     path = f"{APP_NAME}/uploads/{file_id}.{ext}"
@@ -262,7 +273,7 @@ class ProjectReorder(BaseModel):
     project_ids: List[str]
 
 
-@api_router.put("/projects/reorder")
+@api_router.put("/projects/reorder", dependencies=[Depends(verify_admin)])
 async def reorder_projects(reorder_data: ProjectReorder, db: Session = Depends(get_db)):
     """Reorder projects by updating their positions"""
     try:
@@ -304,7 +315,12 @@ async def api_root():
     }
 
 
-@api_router.post("/upload", response_model=FileUploadResponse)
+@api_router.get("/admin/auth-check", dependencies=[Depends(verify_admin)])
+async def admin_auth_check():
+    return {"authorized": True}
+
+
+@api_router.post("/upload", response_model=FileUploadResponse, dependencies=[Depends(verify_admin)])
 async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
     """Upload image, video or PDF file to Cloudinary"""
     try:
@@ -448,7 +464,7 @@ async def download_file(path: str, w: Optional[int] = Query(None), db: Session =
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.post("/projects", response_model=Project)
+@api_router.post("/projects", response_model=Project, dependencies=[Depends(verify_admin)])
 async def create_project(project_data: ProjectCreate, db: Session = Depends(get_db)):
     """Create a new project"""
     try:
@@ -565,7 +581,7 @@ async def get_project(project_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.put("/projects/{project_id}", response_model=Project)
+@api_router.put("/projects/{project_id}", response_model=Project, dependencies=[Depends(verify_admin)])
 async def update_project(project_id: str, update_data: ProjectUpdate, db: Session = Depends(get_db)):
     """Update a project"""
     try:
@@ -622,7 +638,7 @@ async def update_project(project_id: str, update_data: ProjectUpdate, db: Sessio
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.delete("/projects/{project_id}")
+@api_router.delete("/projects/{project_id}", dependencies=[Depends(verify_admin)])
 async def delete_project(project_id: str, db: Session = Depends(get_db)):
     """Delete a project"""
     try:
@@ -673,7 +689,7 @@ async def get_all_tags(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.post("/tags")
+@api_router.post("/tags", dependencies=[Depends(verify_admin)])
 async def create_tag(tag: dict, db: Session = Depends(get_db)):
     """Create a new global tag"""
     try:
@@ -701,7 +717,7 @@ async def create_tag(tag: dict, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.delete("/tags/{tag_id}")
+@api_router.delete("/tags/{tag_id}", dependencies=[Depends(verify_admin)])
 async def delete_tag(tag_id: str, db: Session = Depends(get_db)):
     """Delete a global tag"""
     try:
@@ -720,7 +736,7 @@ async def delete_tag(tag_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.patch("/tags/{tag_id}/pin")
+@api_router.patch("/tags/{tag_id}/pin", dependencies=[Depends(verify_admin)])
 async def pin_tag(tag_id: str, db: Session = Depends(get_db)):
     """Set tag as pinned and add it to all existing projects"""
     try:
@@ -747,7 +763,7 @@ async def pin_tag(tag_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.patch("/tags/{tag_id}/unpin")
+@api_router.patch("/tags/{tag_id}/unpin", dependencies=[Depends(verify_admin)])
 async def unpin_tag(tag_id: str, db: Session = Depends(get_db)):
     """Unpin tag and remove it from all projects"""
     try:
@@ -771,7 +787,7 @@ async def unpin_tag(tag_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@api_router.put("/tags/{tag_id}")
+@api_router.put("/tags/{tag_id}", dependencies=[Depends(verify_admin)])
 async def update_tag(tag_id: str, tag_update: dict, db: Session = Depends(get_db)):
     """Update a global tag - changes propagate to all projects"""
     try:
