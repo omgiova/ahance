@@ -147,11 +147,11 @@ export default function Portfolio() {
                 SOBRE
               </button>
               <button
-                onClick={() => scrollToSection('projetos')}
+                onClick={() => scrollToSection('trabalhos')}
                 className="flex-1 md:flex-none text-center md:text-left text-[15px] md:text-base text-black/70 hover:text-black transition-colors"
                 style={{ fontFamily: 'EB Garamond, serif' }}
               >
-                PROJETOS
+                TRABALHOS
               </button>
               <div className="relative flex-1 md:flex-none flex justify-end">
                 <button
@@ -239,11 +239,11 @@ export default function Portfolio() {
                 SOBRE
               </button>
               <button
-                onClick={() => scrollToSection('projetos')}
+                onClick={() => scrollToSection('trabalhos')}
                 className="w-full text-left py-1 text-[15px] uppercase text-black/70 hover:text-black transition-colors"
                 style={{ fontFamily: 'EB Garamond, serif' }}
               >
-                PROJETOS
+                TRABALHOS
               </button>
               <div>
                 <button
@@ -459,7 +459,7 @@ export default function Portfolio() {
       </section>
 
       {/* Projects Section */}
-      <section id="projetos" className="relative py-20">
+      <section id="trabalhos" className="relative py-20">
         {/* Background Layer for the entire projects section */}
         <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-screen pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
           {Array.from({ length: 40 }).map((_, i) => {
@@ -496,7 +496,7 @@ export default function Portfolio() {
                 className="text-5xl md:text-6xl font-normal text-black"
                 style={{ fontFamily: 'EB Garamond, serif' }}
               >
-                Projetos
+                Trabalhos
               </h2>
             </div>
 
@@ -626,6 +626,41 @@ export default function Portfolio() {
                 </Button>
               </div>
             )}
+          </div>
+        </div>
+      </section>
+
+      {/* Simple Text Section */}
+      <section id="textos" className="relative max-w-4xl mx-auto px-6 py-20">
+        <div className="relative pl-8 border-l-2 border-[#e38e4d]">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-3 h-3 bg-[#e38e4d] rounded-full" />
+            <span
+              className="text-sm uppercase tracking-widest text-black/60"
+              style={{ fontFamily: 'EB Garamond, serif' }}
+            >
+              Importante
+            </span>
+          </div>
+          <h2
+            className="text-5xl md:text-3xl font-normal text-black mb-8"
+            style={{ fontFamily: 'EB Garamond, serif' }}
+          >
+            Aviso Legal
+          </h2>
+          <div className="space-y-6 text-large text-black/80" style={{ fontFamily: 'EB Garamond, serif' }}>
+            <p>
+              Os materiais, projetos e conteúdos exibidos neste portfólio foram desenvolvidos ao longo da minha trajetória profissional e são apresentados exclusivamente para fins de demonstração de competências, experiências e habilidades.
+            </p>
+            <p>
+              A autoria intelectual dos trabalhos de minha criação é protegida nos termos da Lei nº 9.610/1998 (Lei de Direitos Autorais), sendo vedada sua reprodução, distribuição, adaptação ou uso comercial por terceiros sem autorização prévia e expressa.
+            </p>
+            <p>
+              Os projetos que envolvem marcas, imagens, dados ou informações de terceiros são exibidos com base no direito moral de autor e no legítimo interesse de demonstração profissional, sem qualquer finalidade comercial ou divulgação de informações confidenciais.
+            </p>
+            <p>
+              Caso algum conteúdo aqui apresentado suscite preocupações relacionadas a direitos autorais, imagem, privacidade ou sigilo, solicito que entre em contato pelo endereço contato@giovaniamorim.com. As tratativas serão conduzidas com prontidão e boa-fé, em conformidade com a legislação brasileira vigente, incluindo a Lei nº 9.610/1998 e a Lei nº 13.709/2018 (LGPD).
+            </p>
           </div>
         </div>
       </section>
