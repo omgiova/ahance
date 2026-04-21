@@ -287,7 +287,7 @@ export default function Portfolio() {
         <img 
           src={LOGO_URL} 
           alt="Giovani Amorim Logo" 
-          className="w-64 md:w-80 h-auto"
+          className="w-48 md:w-56 h-auto"
         />
       </motion.div>
 
@@ -318,7 +318,7 @@ export default function Portfolio() {
         </div>
 
         {/* Content Overlay on Video */}
-        <div className="absolute inset-0 flex flex-col items-center justify-start pt-12 py-12">
+        <div className="absolute inset-0 flex flex-col items-center justify-start pt-4 md:pt-40 py-12">
           {/* Main Title - moved up */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -327,13 +327,13 @@ export default function Portfolio() {
             className="text-center px-6"
           >
             <h1 
-              className="text-4xl md:text-7xl font-normal text-black mb-4"
+              className="text-2xl md:text-5xl font-normal text-black mb-4"
               style={{ fontFamily: 'EB Garamond, serif', lineHeight: '1.1' }}
             >
               redator
             </h1>
             <h2 
-              className="text-4xl md:text-7xl font-normal text-black"
+              className="text-2xl md:text-5xl font-normal text-black"
               style={{ fontFamily: 'EB Garamond, serif', lineHeight: '1.1' }}
             >
               estrategista de conteúdo
@@ -352,12 +352,12 @@ export default function Portfolio() {
           .marquee-track {
             display: flex;
             width: max-content;
-            animation: marquee 30s linear infinite;
+            animation: marquee 24s linear infinite;
           }
         `}</style>
         <div className="marquee-track">
           {Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-8 text-3xl md:text-4xl italic text-black font-normal pr-8" style={{ fontFamily: 'EB Garamond, serif' }}>
+            <div key={i} className="flex items-center gap-8 text-xl md:text-3xl italic text-black/70 font-normal pr-8" style={{ fontFamily: 'EB Garamond, serif' }}>
               <span>criatividade</span>
               <div className="w-3 h-3 bg-[#e38e4d] rounded-full shrink-0" />
               <span>SEO</span>
